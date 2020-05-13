@@ -12,6 +12,19 @@ multiple parent directories. You can check if a `File` is a directory using the
 
 Note: "Folder" is just a synonym for "Directory".
 
+### Authentication
+
+By default, the client reads your service account key JSON file at the location
+given by the environment variable `GOOGLE_APPLICATION_CREDENTIALS`. You can
+override this behavior by passing it directly:
+
+    client = Client("/path/to/your/service-account-key.json")
+
+
+See Google’s documentation on [how to create a service account key][k].
+
+[k]: https://cloud.google.com/iam/docs/creating-managing-service-account-keys
+
 ### Client
 
 High-level `Client` methods:
