@@ -27,7 +27,7 @@ setup(
     install_requires=[
         "datatypes==0.1.0",
         "google-api-python-client==1.5.3",
-        "httplib2==0.9.2",
+        "httplib2==0.18.0",
         "oauth2client==3.0.0",
         "openpyxl==2.4.0",
         "pyasn1==0.1.9",
