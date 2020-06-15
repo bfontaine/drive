@@ -1,0 +1,25 @@
+GOOGLE_APP_AUDIO = "application/vnd.google-apps.audio"
+GOOGLE_DOC = "application/vnd.google-apps.document"
+GOOGLE_DRAWING = "application/vnd.google-apps.drawing"
+
+GOOGLE_DRIVE_FILE = "application/vnd.google-apps.file"
+GOOGLE_DRIVE_FOLDER = "application/vnd.google-apps.folder"
+
+GOOGLE_FORMS = "application/vnd.google-apps.format"
+GOOGLE_FUSION_TABLES = "application/vnd.google-apps.fusiontable"
+GOOGLE_MY_MAPS = "application/vnd.google-apps.map"
+GOOGLE_SLIDES = "application/vnd.google-apps.presentation"
+GOOGLE_APPS_SCRIPTS = "application/vnd.google-apps.Scripts"
+GOOGLE_SITES = "application/vnd.google-apps.sites"
+GOOGLE_SHEETS = "application/vnd.google-apps.spreadsheet"
+
+TEXT = "text/plain"
+CSV = "text/csv"
+JSON = "application/json"
+
+XLS = "application/vnd.ms-excel"
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+DOC = "application/msword"
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+PPT = "application/vnd.ms-powerpoint"
+PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"

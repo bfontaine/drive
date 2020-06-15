@@ -25,7 +25,6 @@ setup(
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     install_requires=[
-        "datatypes==0.1.0",
         "google-api-python-client==1.5.3",
         "httplib2==0.18.0",
         "oauth2client==3.0.0",

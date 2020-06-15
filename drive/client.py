@@ -11,7 +11,7 @@ import openpyxl
 from apiclient import discovery
 from apiclient.errors import HttpError
 from apiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
-from datatypes import mimetypes
+from drive import mimetypes
 from drive.auth import authorize, get_credentials
 from drive.exceptions import FileNotFoundException
 from drive.files import File

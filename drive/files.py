@@ -3,7 +3,7 @@
 import io
 import json
 
-from datatypes import mimetypes
+from drive import mimetypes
 
 class File:
     """
