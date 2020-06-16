@@ -114,6 +114,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2019 Oscaro.com
+Copyright © 2016-2020 Oscaro.com
 
 Distributed under the MIT License.

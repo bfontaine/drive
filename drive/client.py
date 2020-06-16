@@ -5,6 +5,7 @@ import os.path
 import random
 import sys
 import time
+from typing import Optional, List, Any, Tuple
 
 import httplib2
 import openpyxl
@@ -38,6 +39,11 @@ def handle_progressless_iter(error, progressless_iters):
 
 
 def print_with_carriage_return(s):
+    """
+    Internal utility to print a one-line string prefixed with a carriage return (``\\r``).
+    :param s: string to print
+    :return: None
+    """
     sys.stdout.write('\r' + s)
     sys.stdout.flush()
 
@@ -47,7 +53,11 @@ class Client:
     Google Drive client
     """
 
-    def __init__(self, credentials_path=None):
+    def __init__(self, credentials_path: Optional[str] = None):
+        """
+
+        :param credentials_path:
+        """
         credentials = get_credentials(credentials_path)
         http = authorize(credentials)
         self.service = discovery.build('drive', 'v3', http=http)
@@ -56,8 +66,13 @@ class Client:
     def _files(self):
         return self.service.files()
 
+    def create_folder(self, name: str, parent_id: str):
+        """
 
-    def create_folder(self, name, parent_id):
+        :param name:
+        :param parent_id:
+        :return:
+        """
         file_metadata = {
             "name" : name,
             "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER,
@@ -67,8 +82,13 @@ class Client:
 
         return self._execute_file_request(self._files.create(body=file_metadata))
 
-    def get_or_create_folder(self, folder_name, parent_id=None):
-        """ Get the ID for the folder with name folder_name."""
+    def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None):
+        """
+        Get the ID for the folder with name folder_name.
+        :param folder_name:
+        :param parent_id:
+        :return:
+        """
 
         folder_list = self.list_files(name_equals=folder_name,
                                       mimetype=mimetypes.GOOGLE_DRIVE_FOLDER,
@@ -82,12 +102,23 @@ class Client:
 
         return self.create_folder(folder_name, parent_id)
 
+    def remove_file(self, file_id: str):
+        """
+        Remove a file by its id.
 
-    def remove_file(self, file_id):
+        :param file_id:
+        :return:
+        """
         return self._files.delete(fileId=file_id).execute()
 
-
     def get_file_metadata(self, file_id, raise_if_not_found=True, **kw):
+        """
+
+        :param file_id:
+        :param raise_if_not_found:
+        :param kw:
+        :return:
+        """
         try:
             return self._files.get(fileId=file_id, **kw).execute()
         except HttpError as e:
@@ -95,14 +126,28 @@ class Client:
                 return None
             raise e
 
-
-    def get_file(self, file_id, raise_if_not_found=True):
+    def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
+        """
+        Get a file by its id.
+        :param file_id:
+        :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
+        :return:
+        """
         fm = self.get_file_metadata(file_id, raise_if_not_found)
         if fm:
             return File(fm, client=self)
 
+    def get_file_by_name(self, name: str, parent_id: Optional[str] = None) -> Optional[File]:
+        """
+        Get a file by name.
+        Note that, unlike ids, names are not guaranteed to be unique: you can have multiple files with the same name
+        on Google Drive.
 
-    def get_file_by_name(self, name, parent_id=None):
+        :param name: Drive filename
+        :param parent_id: optional parent id.
+        :return:
+        :raise: ``drive.exceptions.FileNotFoundException`` if the file doesn’t exist
+        """
         kw = dict(name_equals=name, n=1)
         if parent_id:
             kw["parents_in"] = parent_id
@@ -112,32 +157,49 @@ class Client:
 
         return ls[0]
 
-
-    def file_exists(self, name=None, file_id=None, parent_id=None):
+    def file_exists(self,
+                    name: Optional[str] = None,
+                    file_id: Optional[str] = None,
+                    parent_id: Optional[str] = None) -> Optional[File]:
         """
         Check if a file exists and if so returns it.
+
+        :param name:
+        :param file_id:
+        :param parent_id:
+        :return:
+        :raise: RuntimeError if both ``name`` and ``file_id`` are ``None``.
         """
         if not name and not file_id:
             raise RuntimeError("You must provide a name or file_id")
 
         if file_id:
-            return bool(self.get_file(file_id, raise_if_not_found=False))
+            return self.get_file(file_id, raise_if_not_found=False)
 
         files = self.list_files(name_equals=name, parents_in=parent_id, n=1)
         if not files:
-            return False
+            return
         return files[0]
 
-
-    def files_shared_with_me(self):
+    def files_shared_with_me(self) -> List[File]:
+        """
+        Return a list of files (and 'directories') 'shared with me'.
+        :return:
+        """
         return self._execute_file_request(self._files.list(q="sharedWithMe=true"))
 
-
-    def get_shared_file(self, name, is_directory=None):
+    def get_shared_file(self, name: str,
+                        is_directory: Optional[bool] = None,
+                        raise_if_not_found=True) -> Optional[File]:
         """
-        Retrieve a shared file. If ``is_directory`` is a boolean, it’s used to
-        filter files that are (or not) directories. By default the first
+        Retrieve a shared file.
+        If ``is_directory`` is a boolean, it’s used to filter files that are (or not) directories. By default the first
         matching file is returned without checking if it’s a directory or not.
+
+        :param name:
+        :param is_directory:
+        :param raise_if_not_found:
+        :return:
         """
         for shared in self.files_shared_with_me():
             if shared.name == name:
@@ -147,25 +209,40 @@ class Client:
                     continue
 
                 return shared
-        raise FileNotFoundException(name)
 
+        if raise_if_not_found:
+            raise FileNotFoundException(name)
 
-    def get_shared_directory(self, name):
+    def get_shared_directory(self, name: str) -> Optional[File]:
         """
-        Retrieve a shared directory. This is a shortcut for
-        ``get_shared_file(name, is_directory=True)``.
+        Retrieve a shared directory. This is a shortcut for ``get_shared_file(name, is_directory=True)``.
+        :param name:
+        :return:
         """
         return self.get_shared_file(name, is_directory=True)
 
-
-    def root(self):
+    def root(self) -> File:
+        """
+        Return the root directory. Note the alias ``"root"`` works as an alias file id for the root directory.
+        :return:
+        """
         return self.get_file("root")
 
-
-    def list_files(self, name_equals=None, name_contains=None,
-                        mimetype=None, parents_in=None,
-                        n=100):
-        """Outputs the names and IDs for up to N files."""
+    def list_files(self,
+                   name_equals: Optional[str] = None,
+                   name_contains: Optional[str] = None,
+                   mimetype: Optional[str] = None,
+                   parents_in=None,
+                   n=100):
+        """
+        Outputs the names and IDs for up to N files.
+        :param name_equals:
+        :param name_contains:
+        :param mimetype:
+        :param parents_in:
+        :param n:
+        :return:
+        """
 
         query_clauses = [("trashed", "=", False)]
 
@@ -182,9 +259,20 @@ class Client:
 
         return self._execute_file_request(self._files.list(q=q, pageSize=n))
 
-    def update_file(self, file_id, remove_parents_ids=None,
-                                   add_parents_ids=None,
-                                   name=None, media=None):
+    def update_file(self, file_id: str,
+                    remove_parents_ids=None,
+                    add_parents_ids=None,
+                    name: Optional[str] = None,
+                    media=None):
+        """
+
+        :param file_id:
+        :param remove_parents_ids:
+        :param add_parents_ids:
+        :param name:
+        :param media:
+        :return:
+        """
         kw = dict(fileId=file_id)
         if remove_parents_ids:
             kw["removeParents"] = ",".join(remove_parents_ids)
@@ -201,19 +289,41 @@ class Client:
 
         return self._execute_file_request(self._files.update(**kw))
 
-    def move_file_to_folder(self, file_id, folder_id):
+    def move_file_to_folder(self, file_id: str, folder_id: str):
+        """
+
+        :param file_id:
+        :param folder_id:
+        :return:
+        """
         # Retrieve the existing parents to remove
-        resp = self._files.get(fileId=file_id, fields='parents').execute();
+        resp = self._files.get(fileId=file_id, fields='parents').execute()
 
-        return self.update_file(file_id, add_parents_ids=[folder_id],
-                                         remove_parents_ids=resp["parents"])
+        return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"])
 
-    def rename_file(self, file_id, name):
+    def rename_file(self, file_id: str, name: str):
+        """
+
+        :param file_id:
+        :param name:
+        :return:
+        """
         return self.update_file(file_id, name=name)
 
+    def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
+        """
+        Download a file and write its content using the binary writer ``writer``.
 
-    def download(self, file_id, binwriter, mime_type=None):
-        """ Download a file and write its content using ``binwriter``."""
+        Example:
+
+            with open("my_file.ext", "wb") as f:
+                client.download(file_id, f)
+
+        :param file_id:
+        :param writer: binary writer
+        :param mime_type:
+        :return:
+        """
         kw = dict(fileId=file_id)
         fn = self._files.get_media
 
@@ -221,39 +331,61 @@ class Client:
             kw["mimeType"] = mime_type
             fn = self._files.export_media
 
-        downloader = MediaIoBaseDownload(binwriter, fn(**kw))
+        downloader = MediaIoBaseDownload(writer, fn(**kw))
         # bypass the downloader; there appear to be a bug for large files
-        binwriter.write(downloader._request.execute())
+        writer.write(downloader._request.execute())
 
-
-    def download_file(self, file_id, path, mime_type=None):
+    def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None) -> None:
+        """
+        Download a file.
+        :param file_id:
+        :param path: local path where to save the file.
+        :param mime_type:
+        :return:
+        """
         with open(path, "wb") as f:
             self.download(file_id, f, mime_type=mime_type)
 
-
-    def download_excel_workbook(self, file_id):
-        """ Download a Google Spreadsheet as an openpyxl workbook """
+    def download_excel_workbook(self, file_id: str) -> openpyxl.Workbook:
+        """
+        Download a Google Spreadsheet as an openpyxl workbook.
+        :param file_id:
+        :return: ``openpyxl.Workbook`` object.
+        """
         buff = io.BytesIO()
         self.download(file_id, buff, mimetypes.XLSX)
         buff.seek(0)
         return openpyxl.load_workbook(buff, read_only=True)
 
-    def upload(self, parent_id, name, binreader, 
-               mime_type=None, original_mime_type=None,
+    def upload(self, parent_id: str, name: str,
+               reader,
+               mime_type: Optional[str] = None,
+               original_mime_type: Optional[str] = None,
                update_existing=False,
                resumable=False):
+        """
+
+        :param parent_id:
+        :param name: remote filename
+        :param reader: binary file reader
+        :param mime_type:
+        :param original_mime_type:
+        :param update_existing:
+        :param resumable:
+        :return:
+        """
 
         if isinstance(parent_id, File):
             parent_id = parent_id.id
 
         if not original_mime_type:
             import magic
-            pos = binreader.tell()
-            buff = binreader.read(1024)
-            binreader.seek(pos)
+            pos = reader.tell()
+            buff = reader.read(1024)
+            reader.seek(pos)
             original_mime_type = magic.from_buffer(buff, mime=True)
 
-        media = MediaIoBaseUpload(binreader, mimetype=original_mime_type,
+        media = MediaIoBaseUpload(reader, mimetype=original_mime_type,
                                   chunksize=CHUNKSIZE,
                                   resumable=resumable)
 
@@ -273,13 +405,21 @@ class Client:
         return self._execute_file_request(self._files.create(body=metadata,
                                                              media_body=media))
 
+    def upload_file(self, parent_id: str, path: str,
+                    name: Optional[str] = None,
+                    mime_type: Optional[str] = None,
+                    original_mime_type: Optional[str] = None,
+                    update_existing=False):
+        """
 
-
-
-
-    def upload_file(self, parent_id, path, name=None, mime_type=None,
-                                                      original_mime_type=None,
-                                                      update_existing=False):
+        :param parent_id:
+        :param path: local path
+        :param name: remote filename. If ``None``, use the local basename.
+        :param mime_type:
+        :param original_mime_type:
+        :param update_existing:
+        :return:
+        """
         if isinstance(parent_id, File):
             parent_id = parent_id.id
 
@@ -291,13 +431,21 @@ class Client:
                                original_mime_type,
                                update_existing=update_existing)
 
-
-    def upload_excel_workbook(self, parent, name, workbook,
-                                                  as_spreadsheet=True,
-                                                  update_existing=False):
+    def upload_excel_workbook(self,
+                              parent: str,
+                              name: str,
+                              workbook: openpyxl.Workbook,
+                              as_spreadsheet=True,
+                              update_existing=False):
         """
-        Upload an openpyxl (Excel) workbook and convert it to a Google
-        Spreadsheet unless ``as_spreadsheet`` is false.
+        Upload an openpyxl (Excel) workbook and convert it to a Google Spreadsheet, unless ``as_spreadsheet`` is false.
+
+        :param parent: parent id
+        :param name: remote filename
+        :param workbook: ``openpyxl.Workbook`` object
+        :param as_spreadsheet: if ``True`` (default), convert the document to a Google Spreadsheet
+        :param update_existing:
+        :return:
         """
         buff = io.BytesIO()
         workbook.save(buff)
@@ -311,6 +459,11 @@ class Client:
     # Private API
 
     def _execute_file_request(self, req):
+        """
+
+        :param req:
+        :return:
+        """
         if not req.resumable:
             resp = req.execute()
             if "files" in resp:
@@ -321,6 +474,7 @@ class Client:
         else:
             progressless_iters = 0
             response = None
+            progress = None
             while response is None:
                 error = None
                 try:
@@ -345,12 +499,15 @@ class Client:
                 print_with_carriage_return('Upload %d%%' %
                                            (100 * progress.progress()))
 
-    def _make_querystring(self, clauses, join="and"):
+    def _make_querystring(self, clauses: List[Tuple[str, str, Any]], join="and"):
         """
         Make a "and" query string by combining all clauses. Each clause is a
         3-elements tuple of ``(field, operator, value)``. Refer to the
         following link for more information:
             https://developers.google.com/drive/v3/web/search-parameters
+        :param clauses:
+        :param join:
+        :return:
         """
         parts = []
         for field, op, value in clauses:
@@ -358,8 +515,15 @@ class Client:
 
         return (" %s " % join).join(parts)
 
+    def _make_query_clause(self, field: str, op: str, value: Any, negation=False) -> str:
+        """
 
-    def _make_query_clause(self, field, op, value, negation=False):
+        :param field:
+        :param op:
+        :param value:
+        :param negation:
+        :return:
+        """
         svalue = self._serialize_query_value(value)
         if op == "in":
             p = "%s %s %s" % (svalue, op, field)
@@ -369,8 +533,12 @@ class Client:
             p = "not %s" % p
         return p
 
-
-    def _serialize_query_value(self, value):
+    def _serialize_query_value(self, value: Any) -> str:
+        """
+        Serialize a query value.
+        :param value:
+        :return:
+        """
         if isinstance(value, bool):
             return "true" if value else "false"
 

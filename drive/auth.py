@@ -3,6 +3,7 @@
 import os
 import httplib2
 from os import environ
+from typing import Optional
 
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -16,13 +17,14 @@ DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 
 class MissingCredentialsException(DriveException):
     def __init__(self):
-        super().__init__("Missing credentials! Please set %s" %
-                ENV_CLIENT_SECRET_PATH)
+        super().__init__("Missing credentials! Please set %s" % ENV_CLIENT_SECRET_PATH)
 
 
-def get_credentials(path=None):
+def get_credentials(path: Optional[str] = None):
     """
     Retrieve the user's Google Cloud credentials.
+    :param path:
+    :return:
     """
 
     if path is None:
@@ -34,5 +36,11 @@ def get_credentials(path=None):
         raise MissingCredentialsException()
     return creds
 
+
 def authorize(credentials):
+    """
+
+    :param credentials:
+    :return:
+    """
     return credentials.authorize(httplib2.Http())

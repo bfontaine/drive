@@ -4,5 +4,4 @@ __version__ = "0.2.1"
 
 from drive.client import Client
 
-if False:  # Silent Pyflakes
-    Client
+_ = Client  # Silent Pyflakes
