@@ -5,7 +5,7 @@ import os.path
 import random
 import sys
 import time
-from typing import Optional, List, Any, Tuple
+from typing import Optional, List, Any, Tuple, Union
 
 import httplib2
 import openpyxl
@@ -66,7 +66,7 @@ class Client:
     def _files(self):
         return self.service.files()
 
-    def create_folder(self, name: str, parent_id: str):
+    def create_folder(self, name: str, parent_id: str, supports_all_drives: bool = False):
         """
 
         :param name:
@@ -80,9 +80,13 @@ class Client:
         if parent_id:
             file_metadata["parents"] = [parent_id]
 
-        return self._execute_file_request(self._files.create(body=file_metadata))
+        return self._execute_file_request(self._files.create(
+            body=file_metadata,
+            supportsAllDrives=supports_all_drives
+        ))
 
-    def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None):
+    def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None,
+                             supports_all_drives: bool = False):
         """
         Get the ID for the folder with name folder_name.
         :param folder_name:
@@ -93,23 +97,24 @@ class Client:
         folder_list = self.list_files(name_equals=folder_name,
                                       mimetype=mimetypes.GOOGLE_DRIVE_FOLDER,
                                       parents_in=parent_id,
-                                      n=1)
+                                      n=1,
+                                      supports_all_drives=supports_all_drives)
         if folder_list:
             if len(folder_list) == 1:
-                return File(folder_list[0], client=self)
+                return File(folder_list[0], client=self, supports_all_drives=supports_all_drives)
 
             raise NameError("Unable to find folder %s" % folder_name)
 
         return self.create_folder(folder_name, parent_id)
 
-    def remove_file(self, file_id: str):
+    def remove_file(self, file_id: str, supports_all_drives: bool = False):
         """
         Remove a file by its id.
 
         :param file_id:
         :return:
         """
-        return self._files.delete(fileId=file_id).execute()
+        return self._files.delete(fileId=file_id, supportsAllDrives=supports_all_drives).execute()
 
     def get_file_metadata(self, file_id, raise_if_not_found=True, **kw):
         """
@@ -126,18 +131,18 @@ class Client:
                 return None
             raise e
 
-    def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
+    def get_file(self, file_id: str, raise_if_not_found=True, supports_all_drives: bool = False) -> Optional[File]:
         """
         Get a file by its id.
         :param file_id:
         :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
         :return:
         """
-        fm = self.get_file_metadata(file_id, raise_if_not_found)
+        fm = self.get_file_metadata(file_id, raise_if_not_found, supportsAllDrives=supports_all_drives)
         if fm:
-            return File(fm, client=self)
+            return File(fm, client=self, supports_all_drives=supports_all_drives)
 
-    def get_file_by_name(self, name: str, parent_id: Optional[str] = None) -> Optional[File]:
+    def get_file_by_name(self, name: str, parent_id: Optional[str] = None, supports_all_drives: bool = False) -> Optional[File]:
         """
         Get a file by name.
         Note that, unlike ids, names are not guaranteed to be unique: you can have multiple files with the same name
@@ -151,7 +156,7 @@ class Client:
         kw = dict(name_equals=name, n=1)
         if parent_id:
             kw["parents_in"] = parent_id
-        ls = self.list_files(**kw)
+        ls = self.list_files(**kw, supports_all_drives=supports_all_drives)
         if not ls:
             raise FileNotFoundException(name)
 
@@ -160,7 +165,8 @@ class Client:
     def file_exists(self,
                     name: Optional[str] = None,
                     file_id: Optional[str] = None,
-                    parent_id: Optional[str] = None) -> Optional[File]:
+                    parent_id: Optional[str] = None,
+                    supports_all_drives: bool = False) -> Optional[File]:
         """
         Check if a file exists and if so returns it.
 
@@ -174,23 +180,24 @@ class Client:
             raise RuntimeError("You must provide a name or file_id")
 
         if file_id:
-            return self.get_file(file_id, raise_if_not_found=False)
+            return self.get_file(file_id, raise_if_not_found=False, supports_all_drives=supports_all_drives)
 
-        files = self.list_files(name_equals=name, parents_in=parent_id, n=1)
+        files = self.list_files(name_equals=name, parents_in=parent_id, n=1, supports_all_drives=supports_all_drives)
         if not files:
             return
         return files[0]
 
-    def files_shared_with_me(self) -> List[File]:
+    def files_shared_with_me(self, supports_all_drives: bool = False) -> List[File]:
         """
         Return a list of files (and 'directories') 'shared with me'.
         :return:
         """
-        return self._execute_file_request(self._files.list(q="sharedWithMe=true"))
+        return self._execute_file_request(self._files.list(q="sharedWithMe=true", supportsAllDrives=supports_all_drives))
 
     def get_shared_file(self, name: str,
                         is_directory: Optional[bool] = None,
-                        raise_if_not_found=True) -> Optional[File]:
+                        raise_if_not_found=True,
+                        supports_all_drives: bool = False) -> Optional[File]:
         """
         Retrieve a shared file.
         If ``is_directory`` is a boolean, it’s used to filter files that are (or not) directories. By default the first
@@ -201,7 +208,7 @@ class Client:
         :param raise_if_not_found:
         :return:
         """
-        for shared in self.files_shared_with_me():
+        for shared in self.files_shared_with_me(supports_all_drives=supports_all_drives):
             if shared.name == name:
                 if is_directory is False and shared.is_directory:
                     continue
@@ -213,13 +220,13 @@ class Client:
         if raise_if_not_found:
             raise FileNotFoundException(name)
 
-    def get_shared_directory(self, name: str) -> Optional[File]:
+    def get_shared_directory(self, name: str, supports_all_drives: bool = False) -> Optional[File]:
         """
         Retrieve a shared directory. This is a shortcut for ``get_shared_file(name, is_directory=True)``.
         :param name:
         :return:
         """
-        return self.get_shared_file(name, is_directory=True)
+        return self.get_shared_file(name, is_directory=True, supports_all_drives=supports_all_drives)
 
     def root(self) -> File:
         """
@@ -233,7 +240,8 @@ class Client:
                    name_contains: Optional[str] = None,
                    mimetype: Optional[str] = None,
                    parents_in=None,
-                   n=100):
+                   n=100,
+                   supports_all_drives: bool = False):
         """
         Outputs the names and IDs for up to N files.
         :param name_equals:
@@ -257,13 +265,17 @@ class Client:
 
         q = self._make_querystring(query_clauses)
 
-        return self._execute_file_request(self._files.list(q=q, pageSize=n))
+        return self._execute_file_request(
+            self._files.list(q=q, pageSize=n, supportsAllDrives=supports_all_drives,
+                             includeItemsFromAllDrives=supports_all_drives)
+        )
 
     def update_file(self, file_id: str,
                     remove_parents_ids=None,
                     add_parents_ids=None,
                     name: Optional[str] = None,
-                    media=None):
+                    media=None,
+                    supports_all_drives: bool = False):
         """
 
         :param file_id:
@@ -284,12 +296,15 @@ class Client:
         if media:
             kw["media_body"] = media
 
+        if supports_all_drives:
+            kw["supportsAllDrives"] = True
+
         if len(kw) == 1:  # No modification, only fileId
             return
 
         return self._execute_file_request(self._files.update(**kw))
 
-    def move_file_to_folder(self, file_id: str, folder_id: str):
+    def move_file_to_folder(self, file_id: str, folder_id: str, supports_all_drives: bool = False):
         """
 
         :param file_id:
@@ -297,20 +312,20 @@ class Client:
         :return:
         """
         # Retrieve the existing parents to remove
-        resp = self._files.get(fileId=file_id, fields='parents').execute()
+        resp = self._files.get(fileId=file_id, fields='parents', supportsAllDrives=supports_all_drives).execute()
 
-        return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"])
+        return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"], supports_all_drives=supports_all_drives)
 
-    def rename_file(self, file_id: str, name: str):
+    def rename_file(self, file_id: str, name: str, supports_all_drives: bool = False):
         """
 
         :param file_id:
         :param name:
         :return:
         """
-        return self.update_file(file_id, name=name)
+        return self.update_file(file_id, name=name, supports_all_drives=supports_all_drives)
 
-    def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
+    def download(self, file_id: str, writer, mime_type: Optional[str] = None, supports_all_drives: bool = False) -> None:
         """
         Download a file and write its content using the binary writer ``writer``.
 
@@ -331,11 +346,14 @@ class Client:
             kw["mimeType"] = mime_type
             fn = self._files.export_media
 
+        if supports_all_drives:
+            kw["supportsAllDrives"] = supports_all_drives
+
         downloader = MediaIoBaseDownload(writer, fn(**kw))
         # bypass the downloader; there appear to be a bug for large files
         writer.write(downloader._request.execute())
 
-    def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None) -> None:
+    def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None, supports_all_drives: bool = False) -> None:
         """
         Download a file.
         :param file_id:
@@ -344,16 +362,16 @@ class Client:
         :return:
         """
         with open(path, "wb") as f:
-            self.download(file_id, f, mime_type=mime_type)
+            self.download(file_id, f, mime_type=mime_type, supports_all_drives=supports_all_drives)
 
-    def download_excel_workbook(self, file_id: str) -> openpyxl.Workbook:
+    def download_excel_workbook(self, file_id: str, supports_all_drives: bool = False) -> openpyxl.Workbook:
         """
         Download a Google Spreadsheet as an openpyxl workbook.
         :param file_id:
         :return: ``openpyxl.Workbook`` object.
         """
         buff = io.BytesIO()
-        self.download(file_id, buff, mimetypes.XLSX)
+        self.download(file_id, buff, mimetypes.XLSX, supports_all_drives=supports_all_drives)
         buff.seek(0)
         return openpyxl.load_workbook(buff, read_only=True)
 
@@ -362,7 +380,8 @@ class Client:
                mime_type: Optional[str] = None,
                original_mime_type: Optional[str] = None,
                update_existing=False,
-               resumable=False):
+               resumable=False,
+               supports_all_drives: bool = False):
         """
 
         :param parent_id:
@@ -390,9 +409,9 @@ class Client:
                                   resumable=resumable)
 
         if update_existing:
-            f = self.file_exists(name=name, parent_id=parent_id)
+            f = self.file_exists(name=name, parent_id=parent_id, supports_all_drives=supports_all_drives)
             if f:
-                return self.update_file(f.id, media=media)
+                return self.update_file(f.id, media=media, supports_all_drives=supports_all_drives)
 
         metadata = {
             'name': name,
@@ -403,13 +422,15 @@ class Client:
             metadata['mimeType'] = mime_type
 
         return self._execute_file_request(self._files.create(body=metadata,
-                                                             media_body=media))
+                                                             media_body=media,
+                                                             supportsAllDrives=supports_all_drives))
 
     def upload_file(self, parent_id: str, path: str,
                     name: Optional[str] = None,
                     mime_type: Optional[str] = None,
                     original_mime_type: Optional[str] = None,
-                    update_existing=False):
+                    update_existing=False,
+                    supports_all_drives: bool = False):
         """
 
         :param parent_id:
@@ -429,14 +450,16 @@ class Client:
         with open(path, "rb") as f:
             return self.upload(parent_id, name, f, mime_type,
                                original_mime_type,
-                               update_existing=update_existing)
+                               update_existing=update_existing,
+                               supports_all_drives=supports_all_drives)
 
     def upload_excel_workbook(self,
                               parent: str,
                               name: str,
                               workbook: openpyxl.Workbook,
                               as_spreadsheet=True,
-                              update_existing=False):
+                              update_existing=False,
+                              supports_all_drives: bool = False):
         """
         Upload an openpyxl (Excel) workbook and convert it to a Google Spreadsheet, unless ``as_spreadsheet`` is false.
 
@@ -454,23 +477,29 @@ class Client:
         target_mimetype = mimetypes.GOOGLE_SHEETS if as_spreadsheet else None
 
         return self.upload(parent, name, buff, target_mimetype,
-                           mimetypes.XLSX, update_existing=update_existing)
+                           mimetypes.XLSX, update_existing=update_existing,
+                           supports_all_drives=supports_all_drives)
 
     # Private API
 
-    def _execute_file_request(self, req):
+    def _execute_file_request(self, req) -> Union[List[File], File]:
         """
 
         :param req:
         :return:
         """
         if not req.resumable:
+            # extract supportAllDrives from uri
+            supports_all_drives = False
+            if req.uri.find("supportsAllDrives=true") != -1:
+                supports_all_drives = True
+
             resp = req.execute()
             if "files" in resp:
-                return [File(f, client=self) for f in resp["files"]]
+                return [File(f, client=self, supports_all_drives=supports_all_drives) for f in resp["files"]]
             if "file" in resp:
-                return File(resp["file"], client=self)
-            return File(resp, client=self)
+                return File(resp["file"], client=self, supports_all_drives=supports_all_drives)
+            return File(resp, client=self, supports_all_drives=supports_all_drives)
         else:
             progressless_iters = 0
             response = None

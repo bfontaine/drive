@@ -3,6 +3,7 @@
 import io
 import json
 
+from typing import List
 from drive import mimetypes
 
 
@@ -11,7 +12,7 @@ class File:
     A file on Google Drive. This might be a directory as well.
     """
 
-    def __init__(self, attrs, client=None):
+    def __init__(self, attrs, client=None, supports_all_drives: bool = False):
         """
 
         :param attrs:
@@ -35,11 +36,12 @@ class File:
             self.size = int(self.size)
 
         self._client = client
+        self.supports_all_drives = supports_all_drives
 
     @property
     def name(self):
         if self._name is None and self._client:
-            me = self._client.get_file_metadata(self.id, False)
+            me = self._client.get_file_metadata(self.id, False, supportsAllDrives=self.supports_all_drives)
             if me:
                 self._name = me["name"]
 
@@ -79,7 +81,7 @@ class File:
         if not self._client:
             return False
 
-        return bool(self._client.get_file(self.id, raise_if_not_found=False))
+        return bool(self._client.get_file(self.id, raise_if_not_found=False, supports_all_drives=self.supports_all_drives))
 
     def unlink(self):
         """
@@ -91,9 +93,9 @@ class File:
 
         # "If successful, this method returns an empty response body."
         # https://developers.google.com/drive/v3/reference/files/delete
-        return self._client.remove_file(self.id) == ""
+        return self._client.remove_file(self.id, supports_all_drives=self.supports_all_drives) == ""
 
-    def rename(self, new_name):
+    def rename(self, new_name: str):
         """
         Rename the file.
         :param new_name:
@@ -101,7 +103,7 @@ class File:
         """
         if not self._client:
             return False
-        m = self._client.update_file(self.id, name=new_name)
+        m = self._client.update_file(self.id, name=new_name, supports_all_drives=self.supports_all_drives)
         self._update(m)
 
     def move_in(self, new_parent, new_name=None):
@@ -118,6 +120,7 @@ class File:
         kw = {
             "add_parents_ids": parents_ids,
             "remove_parents_ids": [p.id for p in self.parents()],
+            "supportsAllDrives": self.supports_all_drives
         }
         if new_name:
             kw["name"] = new_name
@@ -126,7 +129,7 @@ class File:
         self._update(m)
         self.parents_ids = parents_ids
 
-    def list(self):
+    def list(self) -> List["File"]:
         """
         List a directory's content. This returns an empty list for simple files.
         :return:
@@ -134,7 +137,7 @@ class File:
         if not self._client or not self.is_directory:
             return []
 
-        return self._client.list_files(parents_in=self.id)
+        return self._client.list_files(parents_in=self.id, supports_all_drives=self.supports_all_drives)
 
     def create_folder(self, name):
         """
@@ -145,7 +148,7 @@ class File:
         if not self._client or not self.is_directory:
             return False
 
-        return self._client.create_folder(name, self.id)
+        return self._client.create_folder(name, self.id, supports_all_drives=self.supports_all_drives)
 
     def get_or_create_folder(self, name):
         """
@@ -156,9 +159,9 @@ class File:
         if not self._client or not self.is_directory:
             return False
 
-        return self._client.get_or_create_folder(name, self.id)
+        return self._client.get_or_create_folder(name, self.id, supports_all_drives=self.supports_all_drives)
 
-    def get_child(self, name):
+    def get_child(self, name: str):
         """
 
         :param name:
@@ -167,7 +170,7 @@ class File:
         if not self._client or not self.is_directory:
             return False
 
-        return self._client.get_file(name, self.id)
+        return self._client.get_file(name, self.id, supports_all_drives=self.supports_all_drives)
 
     def parents(self):
         """
@@ -179,7 +182,7 @@ class File:
             if not self._client:
                 return []
 
-            m = self._client.get_file_metadata(self.id, fields="parents")
+            m = self._client.get_file_metadata(self.id, fields="parents", supportsAllDrives=self.supports_all_drives)
             if not m:
                 self.parents_ids = []
                 return []
@@ -214,7 +217,7 @@ class File:
         """
         if not self._client:
             return False
-        return self._client.download(self.id, writer, mime_type=mime_type)
+        return self._client.download(self.id, writer, mime_type=mime_type, supports_all_drives=self.supports_all_drives)
 
     def download_file(self, path, mime_type=None):
         """
@@ -225,7 +228,7 @@ class File:
         """
         if not self._client:
             return False
-        return self._client.download(self.id, path, mime_type=mime_type)
+        return self._client.download_file(self.id, path, mime_type=mime_type, supports_all_drives=self.supports_all_drives)
 
     def download_workbook(self):
         """
@@ -234,7 +237,7 @@ class File:
         """
         if not self._client:
             return False
-        return self._client.download_excel_workbook(self.id)
+        return self._client.download_excel_workbook(self.id, supports_all_drives=self.supports_all_drives)
 
     def get_bytes(self, mime_type=None):
         """

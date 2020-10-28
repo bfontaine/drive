@@ -18,7 +18,7 @@ setup(
     version=verstr,
     author='Baptiste Fontaine',
     author_email='baptiste.fontaine@oscaro.com',
-    packages=['drive'],
+    packages=['drive', 'drive.cli'],
     url='https://github.com/oscaro/drive',
     license='MIT License',
     description='Google Drive client',
@@ -42,4 +42,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
+    entry_points={
+        "console_scripts": [
+            "gd-upload=drive.cli.upload:main",
+            "gd-download=drive.cli.download:main",
+        ]
+    }
 )
