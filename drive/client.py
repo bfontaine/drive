@@ -66,6 +66,10 @@ class Client:
     def _files(self):
         return self.service.files()
 
+    @property
+    def _permissions(self):
+        return self.service.permissions()
+
     def create_folder(self, name: str, parent_id: str, supports_all_drives: bool = False):
         """
 
@@ -91,7 +95,7 @@ class Client:
         Get the ID for the folder with name folder_name.
         :param folder_name:
         :param parent_id:
-        :return:
+        :return: drive.File
         """
 
         folder_list = self.list_files(name_equals=folder_name,
@@ -315,6 +319,20 @@ class Client:
         resp = self._files.get(fileId=file_id, fields='parents', supportsAllDrives=supports_all_drives).execute()
 
         return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"], supports_all_drives=supports_all_drives)
+
+    def grant_file_permissions(self, file_id: str, role: str, type_: str, supports_all_drives: bool = False):
+        self._permissions.create(fileId=file_id, body={"role": role, "type": type_},
+                                 supportsAllDrives=supports_all_drives).execute()
+        return True
+
+    def get_web_view_link(self, file_id: str, supports_all_drives: bool = False):
+        resp = self._files.get(fileId=file_id, fields='webViewLink', supportsAllDrives=supports_all_drives).execute()
+
+        return resp['webViewLink']
+
+    def get_web_content_link(self, file_id: str, supports_all_drives: bool = False):
+        resp = self._files.get(fileId=file_id, fields='webContentLink', supportsAllDrives=supports_all_drives).execute()
+        return resp['webContentLink']
 
     def rename_file(self, file_id: str, name: str, supports_all_drives: bool = False):
         """

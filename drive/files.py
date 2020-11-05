@@ -4,6 +4,8 @@ import io
 import json
 
 from typing import List
+
+import drive
 from drive import mimetypes
 
 
@@ -12,7 +14,7 @@ class File:
     A file on Google Drive. This might be a directory as well.
     """
 
-    def __init__(self, attrs, client=None, supports_all_drives: bool = False):
+    def __init__(self, attrs, client: "drive.Client" = None, supports_all_drives: bool = False):
         """
 
         :param attrs:
@@ -161,6 +163,12 @@ class File:
 
         return self._client.get_or_create_folder(name, self.id, supports_all_drives=self.supports_all_drives)
 
+    def grant_permissions(self, role: str, type_: str):
+        if not self._client:
+            return False
+
+        return self._client.grant_file_permissions(self.id, role, type_, supports_all_drives=self.supports_all_drives)
+
     def get_child(self, name: str):
         """
 
@@ -249,6 +257,12 @@ class File:
         self.download(fh, mime_type=mime_type)
         fh.seek(0)
         return fh
+
+    def get_web_content_link(self):
+        return self._client.get_web_content_link(self.id, supports_all_drives=self.supports_all_drives)
+
+    def get_web_view_link(self):
+        return self._client.get_web_view_link(self.id, supports_all_drives=self.supports_all_drives)
 
     def json(self):
         """
