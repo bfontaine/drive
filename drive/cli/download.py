@@ -16,11 +16,13 @@ def main():
 
     if d.is_directory:
         for file_to_download in d.list():
+            print(f"Downloading: {file_to_download.name}")
             file_to_download.download_file(f"{args.output}/{file_to_download.name}")
-            print(f"Downloaded: {file_to_download.name}")
+            print(f"  Done")
     else:
+        print(f"Downloading: {d.name}")
         d.download_file(f"{args.output}/{d.name}")
-        print(f"Downloaded: {d.name}")
+        print("  Done")
 
 if __name__ == "__main__":
     main()

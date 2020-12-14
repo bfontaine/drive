@@ -13,13 +13,14 @@ def main():
     c = Client()
 
     for file_to_upload in args.file:
+        print(f"Uploading file: {file_to_upload}")
         new_file = c.upload_file(
             parent_id=args.output,
             path=file_to_upload,
             update_existing=args.update_existing,
             supports_all_drives=True
         )
-        print(f"File uploaded: {new_file}")
+        print(f"  Done: {new_file}")
 
 
 if __name__ == "__main__":
