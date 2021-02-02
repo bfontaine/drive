@@ -225,7 +225,7 @@ class File:
         """
         if not self._client:
             return False
-        return self._client.download(self.id, path, mime_type=mime_type)
+        return self._client.download_file(self.id, path, mime_type=mime_type)
 
     def download_workbook(self):
         """
