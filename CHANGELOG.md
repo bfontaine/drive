@@ -1,5 +1,9 @@
 # Drive Changelog
 
+## 0.2.3 (2021/02/04)
+
+* Fix `download_file` (#4; reported and fixed by @thapr0digy)
+
 ## 0.2.2 (2020/06/16)
 
 * Add more documentation
