@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 from drive.client import Client
 
