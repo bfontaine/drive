@@ -3,7 +3,7 @@
 ## 0.3.0 (2021/05/08)
 
 * Downloaded workbooks are no longer read-only by default. If you want to get that behavior back, pass `read_only=True`
-  to `File.download_workbook` and `Client.download_excel_workbook`.
+  to `File.download_workbook` and `Client.download_excel_workbook`. This fixes #6.
 * Use `openpyxl` 3.0.7
 
 ## 0.2.4 (2021/02/04)
