@@ -25,13 +25,13 @@ setup(
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     install_requires=[
-        "google-api-python-client==1.5.3",
-        "httplib2==0.18.0",
+        "google-api-python-client==1.6.7",
+        "httplib2==0.19.1",
         "oauth2client==3.0.0",
         "openpyxl==3.0.7",
         "pyasn1==0.1.9",
         "pyasn1-modules==0.0.8",
-        "python-magic==0.4.12",
+        "python-magic==0.4.22",
         "uritemplate==0.6",
     ],
     classifiers=[
