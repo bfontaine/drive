@@ -2,6 +2,10 @@
 
 Google Drive client.
 
+## Install
+
+    pip install drive
+
 ## Usage
 
 The API exposes a client as `drive.client.Client` that manipulates instances of
@@ -114,6 +118,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2020 Oscaro.com
+Copyright © 2016-2021 Oscaro.com
 
 Distributed under the MIT License.
