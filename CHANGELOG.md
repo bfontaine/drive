@@ -1,8 +1,10 @@
 # Drive Changelog
 
-## 0.2.5 (unreleased)
+## 0.3.0 (2021/05/08)
 
-* Use `openpyxl` 3.0+
+* Downloaded workbooks are no longer read-only by default. If you want to get that behavior back, pass `read_only=True`
+  to `File.download_workbook` and `Client.download_excel_workbook`.
+* Use `openpyxl` 3.0.7
 
 ## 0.2.4 (2021/02/04)
 
