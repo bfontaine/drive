@@ -32,7 +32,7 @@ def handle_progressless_iter(error, progressless_iters):
         print('Failed to make progress for too many consecutive iterations.')
         raise error
 
-    sleeptime = random.random() * (2**progressless_iters)
+    sleeptime = random.random() * (2 ** progressless_iters)
     print('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
           % (str(error), sleeptime, progressless_iters))
     time.sleep(sleeptime)
@@ -74,7 +74,7 @@ class Client:
         :return:
         """
         file_metadata = {
-            "name" : name,
+            "name": name,
             "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER,
         }
         if parent_id:
@@ -515,7 +515,7 @@ class Client:
 
         return (" %s " % join).join(parts)
 
-    def _make_query_clause(self, field: str, op: str, value: Any, negation=False) -> str:
+    def _make_query_clause(self, field: str, op: str, value, negation=False) -> str:
         """
 
         :param field:
@@ -533,7 +533,7 @@ class Client:
             p = "not %s" % p
         return p
 
-    def _serialize_query_value(self, value: Any) -> str:
+    def _serialize_query_value(self, value):
         """
         Serialize a query value.
         :param value:
