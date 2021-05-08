@@ -346,16 +346,17 @@ class Client:
         with open(path, "wb") as f:
             self.download(file_id, f, mime_type=mime_type)
 
-    def download_excel_workbook(self, file_id: str) -> openpyxl.Workbook:
+    def download_excel_workbook(self, file_id: str, read_only=False):
         """
         Download a Google Spreadsheet as an openpyxl workbook.
         :param file_id:
+        :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return: ``openpyxl.Workbook`` object.
         """
         buff = io.BytesIO()
         self.download(file_id, buff, mimetypes.XLSX)
         buff.seek(0)
-        return openpyxl.load_workbook(buff, read_only=True)
+        return openpyxl.load_workbook(buff, read_only=read_only)
 
     def upload(self, parent_id: str, name: str,
                reader,

@@ -100,7 +100,9 @@ cl = Client()
 
 # Download
 f = cl.get_file_by_name("my_sheet")
-workbook = f.download_workbook() # readonly openpyxl workbook
+workbook = f.download_workbook() # openpyxl workbook
+# save your download:
+workbook.save("myfile.xlsx")
 
 # Upload
 workbook = Workbook()

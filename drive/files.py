@@ -227,14 +227,15 @@ class File:
             return False
         return self._client.download_file(self.id, path, mime_type=mime_type)
 
-    def download_workbook(self):
+    def download_workbook(self, read_only=False):
         """
 
+        :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return:
         """
         if not self._client:
             return False
-        return self._client.download_excel_workbook(self.id)
+        return self._client.download_excel_workbook(self.id, read_only=read_only)
 
     def get_bytes(self, mime_type=None):
         """
