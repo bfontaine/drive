@@ -1,5 +1,9 @@
 # Drive Changelog
 
+## 0.2.5 (unreleased)
+
+* Use `openpyxl` 3.0+
+
 ## 0.2.4 (2021/02/04)
 
 * Fix `download_file` (#4; reported and fixed by @thapr0digy)
