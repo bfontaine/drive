@@ -1,5 +1,9 @@
 # Drive Changelog
 
+## 0.3.1 (2021/05/20)
+
+* Use `google-api-python-client` 1.12.8
+
 ## 0.3.0 (2021/05/08)
 
 * Downloaded workbooks are no longer read-only by default. If you want to get that behavior back, pass `read_only=True`
