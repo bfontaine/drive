@@ -4,7 +4,8 @@ from setuptools import setup
 
 # http://stackoverflow.com/a/7071358/735926
 import re
-VERSIONFILE='drive/__init__.py'
+
+VERSIONFILE = 'drive/__init__.py'
 verstrline = open(VERSIONFILE, 'rt').read()
 VSRE = r'^__version__\s+=\s+[\'"]([^\'"]+)[\'"]'
 mo = re.search(VSRE, verstrline, re.M)
@@ -17,7 +18,7 @@ setup(
     name='drive',
     version=verstr,
     author='Baptiste Fontaine',
-    author_email='baptiste.fontaine@oscaro.com',
+    author_email='b@ptistefontaine.fr',
     packages=['drive'],
     url='https://github.com/oscaro/drive',
     license='MIT License',
@@ -25,14 +26,11 @@ setup(
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     install_requires=[
-        "google-api-python-client==1.6.7",
+        "google-api-python-client==1.12.8",
         "httplib2==0.19.1",
-        "oauth2client==3.0.0",
+        "oauth2client==4.1.3",
         "openpyxl==3.0.7",
-        "pyasn1==0.1.9",
-        "pyasn1-modules==0.0.8",
-        "python-magic==0.4.22",
-        "uritemplate==0.6",
+        "python-magic",
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
