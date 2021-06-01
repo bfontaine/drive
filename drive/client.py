@@ -10,8 +10,9 @@ from typing import Optional, List, Any, Tuple
 import httplib2
 import openpyxl
 from apiclient import discovery
-from apiclient.errors import HttpError
-from apiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+
 from drive import mimetypes
 from drive.auth import authorize, get_credentials
 from drive.exceptions import FileNotFoundException
@@ -46,6 +47,54 @@ def print_with_carriage_return(s):
     """
     sys.stdout.write('\r' + s)
     sys.stdout.flush()
+
+
+def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
+    """
+    Make a "and" query string by combining all clauses. Each clause is a
+    3-elements tuple of ``(field, operator, value)``. Refer to the
+    following link for more information:
+        https://developers.google.com/drive/v3/web/search-parameters
+    :param clauses:
+    :param join:
+    :return:
+    """
+    parts = []
+    for field, op, value in clauses:
+        parts.append(_make_query_clause(field, op, value))
+
+    return (" %s " % join).join(parts)
+
+
+def _make_query_clause(field: str, op: str, value, negation=False) -> str:
+    """
+
+    :param field:
+    :param op:
+    :param value:
+    :param negation:
+    :return:
+    """
+    svalue = _serialize_query_value(value)
+    if op == "in":
+        p = "%s %s %s" % (svalue, op, field)
+    else:
+        p = "%s %s %s" % (field, op, svalue)
+    if negation:
+        p = "not %s" % p
+    return p
+
+
+def _serialize_query_value(value):
+    """
+    Serialize a query value.
+    :param value:
+    :return:
+    """
+    if isinstance(value, bool):
+        return "true" if value else "false"
+
+    return "'%s'" % str(value).replace("\\", "\\\\").replace("'", "\\'")
 
 
 class Client:
@@ -255,7 +304,7 @@ class Client:
         if parents_in:
             query_clauses.append(("parents", "in", parents_in))
 
-        q = self._make_querystring(query_clauses)
+        q = _make_querystring(query_clauses)
 
         return self._execute_file_request(self._files.list(q=q, pageSize=n))
 
@@ -312,7 +361,7 @@ class Client:
 
     def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
         """
-        Download a file and write its content using the binary writer ``writer``.
+        Download a file and write its content using the binary writer ``writer``. See also ``download_file``.
 
         Example:
 
@@ -337,10 +386,10 @@ class Client:
 
     def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None) -> None:
         """
-        Download a file.
-        :param file_id:
+        Download a file and save it locally.
+        :param file_id: file id
         :param path: local path where to save the file.
-        :param mime_type:
+        :param mime_type: optional mime type
         :return:
         """
         with open(path, "wb") as f:
@@ -499,48 +548,3 @@ class Client:
             if progress:
                 print_with_carriage_return('Upload %d%%' %
                                            (100 * progress.progress()))
-
-    def _make_querystring(self, clauses: List[Tuple[str, str, Any]], join="and"):
-        """
-        Make a "and" query string by combining all clauses. Each clause is a
-        3-elements tuple of ``(field, operator, value)``. Refer to the
-        following link for more information:
-            https://developers.google.com/drive/v3/web/search-parameters
-        :param clauses:
-        :param join:
-        :return:
-        """
-        parts = []
-        for field, op, value in clauses:
-            parts.append(self._make_query_clause(field, op, value))
-
-        return (" %s " % join).join(parts)
-
-    def _make_query_clause(self, field: str, op: str, value, negation=False) -> str:
-        """
-
-        :param field:
-        :param op:
-        :param value:
-        :param negation:
-        :return:
-        """
-        svalue = self._serialize_query_value(value)
-        if op == "in":
-            p = "%s %s %s" % (svalue, op, field)
-        else:
-            p = "%s %s %s" % (field, op, svalue)
-        if negation:
-            p = "not %s" % p
-        return p
-
-    def _serialize_query_value(self, value):
-        """
-        Serialize a query value.
-        :param value:
-        :return:
-        """
-        if isinstance(value, bool):
-            return "true" if value else "false"
-
-        return "'%s'" % str(value).replace("\\", "\\\\").replace("'", "\\'")
