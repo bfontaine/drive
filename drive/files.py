@@ -2,6 +2,9 @@
 
 import io
 import json
+from typing import Optional
+
+from openpyxl.workbook import Workbook
 
 from drive import mimetypes
 
@@ -17,8 +20,7 @@ class File:
         :param attrs:
         :param client:
         """
-        # If one calls File(File(...)) make the outer file copy the attributes
-        # of the inner one
+        # If one calls File(File(...)) make the outer file copy the attributes of the inner one
         if isinstance(attrs, File):
             for attr in ("id", "_name", "kind", "mimetype", "size", "parents", "_client"):
                 setattr(self, attr, getattr(attrs, attr))
@@ -74,7 +76,6 @@ class File:
     def exists(self):
         """
         Test if the file exists.
-        :return:
         """
         if not self._client:
             return False
@@ -224,17 +225,17 @@ class File:
         :return:
         """
         if not self._client:
-            return False
+            return None
         return self._client.download_file(self.id, path, mime_type=mime_type)
 
-    def download_workbook(self, read_only=False):
+    def download_workbook(self, read_only=False) -> Optional[Workbook]:
         """
 
         :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return:
         """
         if not self._client:
-            return False
+            return None
         return self._client.download_excel_workbook(self.id, read_only=read_only)
 
     def get_bytes(self, mime_type=None):
