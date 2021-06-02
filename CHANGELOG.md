@@ -1,6 +1,6 @@
 # Drive Changelog
 
-## 0.3.2 (unreleased)
+## 0.3.2 (2021/06/02)
 
 * Use `google-api-python-client` 2.7.0
 * Add `File#grant_permissions` and `File#get_web_view_link` ([code][perms-code] by @pavel-hamernik)
