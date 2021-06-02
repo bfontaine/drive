@@ -3,11 +3,14 @@
 ## 0.3.2 (unreleased)
 
 * Use `google-api-python-client` 2.7.0
+* Add `File#grant_permissions` and `File#get_web_view_link` ([code][perms-code] by @pavel-hamernik)
 * `File#download_file`, `File#download_workbook` and `File#get_child` now return `None` instead of `False`
   if `._client` isn’t set
 * `File#exists` now returns `None` instead of `False` if `._client` isn’t set
 * `File#download_workbook` now has a correct return type hint: `Optional[Workbook]` instead of `bool`
 * Remove three `client.Client` private methods (`_serialize_query_value`, `_make_query_clause`, `_make_querystring`)
+
+[perms-code]: https://github.com/NoName115/drive/commit/eec799000d1367bf17b5c6f80b655db0ca95b3de
 
 ## 0.3.1 (2021/05/20)
 

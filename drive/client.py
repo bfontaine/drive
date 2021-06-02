@@ -115,6 +115,10 @@ class Client:
     def _files(self):
         return self.service.files()
 
+    @property
+    def _permissions(self):
+        return self.service.permissions()
+
     def create_folder(self, name: str, parent_id: str):
         """
 
@@ -133,10 +137,10 @@ class Client:
 
     def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None):
         """
-        Get the ID for the folder with name folder_name.
+        Get the ID for the folder with name folder_name, creating it if it doesn't exist.
         :param folder_name:
         :param parent_id:
-        :return:
+        :return: drive.File
         """
 
         folder_list = self.list_files(name_equals=folder_name,
@@ -505,6 +509,23 @@ class Client:
 
         return self.upload(parent, name, buff, target_mimetype,
                            mimetypes.XLSX, update_existing=update_existing)
+
+    def grant_file_permissions(self, file_id: str, role: str, type_: str):
+        """
+        :param file_id:
+        :param role:
+        :param type_:
+        :return:
+        """
+        return self._permissions.create(fileId=file_id, body={"role": role, "type": type_}).execute()
+
+    def get_web_view_link(self, file_id: str) -> str:
+        """
+        :param file_id:
+        :return:
+        """
+        resp = self._files.get(fileId=file_id, fields='webViewLink').execute()
+        return resp['webViewLink']
 
     # Private API
 

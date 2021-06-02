@@ -6,6 +6,7 @@ from typing import Optional
 
 from openpyxl.workbook import Workbook
 
+import drive
 from drive import mimetypes
 
 
@@ -14,7 +15,7 @@ class File:
     A file on Google Drive. This might be a directory as well.
     """
 
-    def __init__(self, attrs, client=None):
+    def __init__(self, attrs, client: Optional["drive.Client"] = None):
         """
 
         :param attrs:
@@ -159,6 +160,12 @@ class File:
 
         return self._client.get_or_create_folder(name, self.id)
 
+    def grant_permissions(self, role: str, type_: str):
+        if not self._client:
+            return None
+
+        return self._client.grant_file_permissions(self.id, role, type_)
+
     def get_child(self, name):
         """
         Get a child file. Return None if the current file is not a directory.
@@ -268,6 +275,9 @@ class File:
             line = b.readline()
             if line:  # skip empty lines
                 yield json.loads(line.decode("utf-8"))
+
+    def get_web_view_link(self):
+        return self._client.get_web_view_link(self.id)
 
     def to_dict(self):
         """
