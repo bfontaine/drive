@@ -2,6 +2,7 @@
 
 ## 0.3.2 (unreleased)
 
+* Use `google-api-python-client` 2.7.0
 * `File#download_file` and `File#download_workbook` now return `None` instead of `False` if `._client` isn’t set
 * `File#download_workbook` now has a correct return type hint: `Optional[Workbook]` instead of `bool`
 * Remove three `client.Client` private methods (`_serialize_query_value`, `_make_query_clause`, `_make_querystring`)

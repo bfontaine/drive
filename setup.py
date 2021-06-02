@@ -26,7 +26,7 @@ setup(
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     install_requires=[
-        "google-api-python-client==1.12.8",
+        "google-api-python-client==2.7.0",
         "httplib2==0.19.1",
         "oauth2client==4.1.3",
         "openpyxl==3.0.7",
