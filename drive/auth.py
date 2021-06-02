@@ -39,7 +39,6 @@ def get_credentials(path: Optional[str] = None):
 
 def authorize(credentials):
     """
-
     :param credentials:
     :return:
     """

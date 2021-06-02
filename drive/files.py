@@ -68,7 +68,7 @@ class File:
         if self.mimetype in aliases:
             return aliases[self.mimetype]
 
-        if self.name.lower().endswith(".jsons"):
+        if self.name and self.name.lower().endswith(".jsons"):
             return "JSONS"
 
         return self.mimetype or "?"
@@ -78,7 +78,7 @@ class File:
         Test if the file exists.
         """
         if not self._client:
-            return False
+            return None
 
         return bool(self._client.get_file(self.id, raise_if_not_found=False))
 
@@ -161,12 +161,13 @@ class File:
 
     def get_child(self, name):
         """
+        Get a child file. Return None if the current file is not a directory.
 
         :param name:
         :return:
         """
         if not self._client or not self.is_directory:
-            return False
+            return None
 
         return self._client.get_file(name, self.id)
 
