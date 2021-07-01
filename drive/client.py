@@ -10,8 +10,9 @@ from typing import Optional, List, Any, Tuple, Union
 import httplib2
 import openpyxl
 from apiclient import discovery
-from apiclient.errors import HttpError
-from apiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+
 from drive import mimetypes
 from drive.auth import authorize, get_credentials
 from drive.exceptions import FileNotFoundException
@@ -32,7 +33,7 @@ def handle_progressless_iter(error, progressless_iters):
         print('Failed to make progress for too many consecutive iterations.')
         raise error
 
-    sleeptime = random.random() * (2**progressless_iters)
+    sleeptime = random.random() * (2 ** progressless_iters)
     print('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
           % (str(error), sleeptime, progressless_iters))
     time.sleep(sleeptime)
@@ -46,6 +47,54 @@ def print_with_carriage_return(s):
     """
     sys.stdout.write('\r' + s)
     sys.stdout.flush()
+
+
+def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
+    """
+    Make a "and" query string by combining all clauses. Each clause is a
+    3-elements tuple of ``(field, operator, value)``. Refer to the
+    following link for more information:
+        https://developers.google.com/drive/v3/web/search-parameters
+    :param clauses:
+    :param join:
+    :return:
+    """
+    parts = []
+    for field, op, value in clauses:
+        parts.append(_make_query_clause(field, op, value))
+
+    return (" %s " % join).join(parts)
+
+
+def _make_query_clause(field: str, op: str, value, negation=False) -> str:
+    """
+
+    :param field:
+    :param op:
+    :param value:
+    :param negation:
+    :return:
+    """
+    svalue = _serialize_query_value(value)
+    if op == "in":
+        p = "%s %s %s" % (svalue, op, field)
+    else:
+        p = "%s %s %s" % (field, op, svalue)
+    if negation:
+        p = "not %s" % p
+    return p
+
+
+def _serialize_query_value(value):
+    """
+    Serialize a query value.
+    :param value:
+    :return:
+    """
+    if isinstance(value, bool):
+        return "true" if value else "false"
+
+    return "'%s'" % str(value).replace("\\", "\\\\").replace("'", "\\'")
 
 
 class Client:
@@ -78,7 +127,7 @@ class Client:
         :return:
         """
         file_metadata = {
-            "name" : name,
+            "name": name,
             "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER,
         }
         if parent_id:
@@ -92,7 +141,7 @@ class Client:
     def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None,
                              supports_all_drives: bool = False):
         """
-        Get the ID for the folder with name folder_name.
+        Get the ID for the folder with name folder_name, creating it if it doesn't exist.
         :param folder_name:
         :param parent_id:
         :return: drive.File
@@ -267,7 +316,7 @@ class Client:
         if parents_in:
             query_clauses.append(("parents", "in", parents_in))
 
-        q = self._make_querystring(query_clauses)
+        q = _make_querystring(query_clauses)
 
         return self._execute_file_request(
             self._files.list(q=q, pageSize=n, supportsAllDrives=supports_all_drives,
@@ -320,16 +369,6 @@ class Client:
 
         return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"], supports_all_drives=supports_all_drives)
 
-    def grant_file_permissions(self, file_id: str, role: str, type_: str, supports_all_drives: bool = False):
-        self._permissions.create(fileId=file_id, body={"role": role, "type": type_},
-                                 supportsAllDrives=supports_all_drives).execute()
-        return True
-
-    def get_web_view_link(self, file_id: str, supports_all_drives: bool = False):
-        resp = self._files.get(fileId=file_id, fields='webViewLink', supportsAllDrives=supports_all_drives).execute()
-
-        return resp['webViewLink']
-
     def get_web_content_link(self, file_id: str, supports_all_drives: bool = False):
         resp = self._files.get(fileId=file_id, fields='webContentLink', supportsAllDrives=supports_all_drives).execute()
         return resp['webContentLink']
@@ -345,7 +384,7 @@ class Client:
 
     def download(self, file_id: str, writer, mime_type: Optional[str] = None, supports_all_drives: bool = False) -> None:
         """
-        Download a file and write its content using the binary writer ``writer``.
+        Download a file and write its content using the binary writer ``writer``. See also ``download_file``.
 
         Example:
 
@@ -373,25 +412,26 @@ class Client:
 
     def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None, supports_all_drives: bool = False) -> None:
         """
-        Download a file.
-        :param file_id:
+        Download a file and save it locally.
+        :param file_id: file id
         :param path: local path where to save the file.
-        :param mime_type:
+        :param mime_type: optional mime type
         :return:
         """
         with open(path, "wb") as f:
             self.download(file_id, f, mime_type=mime_type, supports_all_drives=supports_all_drives)
 
-    def download_excel_workbook(self, file_id: str, supports_all_drives: bool = False) -> openpyxl.Workbook:
+    def download_excel_workbook(self, file_id: str, supports_all_drives: bool = False, read_only: bool = False) -> openpyxl.Workbook:
         """
         Download a Google Spreadsheet as an openpyxl workbook.
         :param file_id:
+        :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return: ``openpyxl.Workbook`` object.
         """
         buff = io.BytesIO()
         self.download(file_id, buff, mimetypes.XLSX, supports_all_drives=supports_all_drives)
         buff.seek(0)
-        return openpyxl.load_workbook(buff, read_only=True)
+        return openpyxl.load_workbook(buff, read_only=read_only)
 
     def upload(self, parent_id: str, name: str,
                reader,
@@ -498,6 +538,16 @@ class Client:
                            mimetypes.XLSX, update_existing=update_existing,
                            supports_all_drives=supports_all_drives)
 
+    def grant_file_permissions(self, file_id: str, role: str, type_: str, supports_all_drives: bool = False):
+        return self._permissions.create(
+            fileId=file_id, body={"role": role, "type": type_},
+            supportsAllDrives=supports_all_drives
+        ).execute()
+
+    def get_web_view_link(self, file_id: str, supports_all_drives: bool = False):
+        resp = self._files.get(fileId=file_id, fields='webViewLink', supportsAllDrives=supports_all_drives).execute()
+        return resp['webViewLink']
+
     # Private API
 
     def _execute_file_request(self, req) -> Union[List[File], File]:
@@ -545,48 +595,3 @@ class Client:
             if progress:
                 print_with_carriage_return('Upload %d%%' %
                                            (100 * progress.progress()))
-
-    def _make_querystring(self, clauses: List[Tuple[str, str, Any]], join="and"):
-        """
-        Make a "and" query string by combining all clauses. Each clause is a
-        3-elements tuple of ``(field, operator, value)``. Refer to the
-        following link for more information:
-            https://developers.google.com/drive/v3/web/search-parameters
-        :param clauses:
-        :param join:
-        :return:
-        """
-        parts = []
-        for field, op, value in clauses:
-            parts.append(self._make_query_clause(field, op, value))
-
-        return (" %s " % join).join(parts)
-
-    def _make_query_clause(self, field: str, op: str, value: Any, negation=False) -> str:
-        """
-
-        :param field:
-        :param op:
-        :param value:
-        :param negation:
-        :return:
-        """
-        svalue = self._serialize_query_value(value)
-        if op == "in":
-            p = "%s %s %s" % (svalue, op, field)
-        else:
-            p = "%s %s %s" % (field, op, svalue)
-        if negation:
-            p = "not %s" % p
-        return p
-
-    def _serialize_query_value(self, value: Any) -> str:
-        """
-        Serialize a query value.
-        :param value:
-        :return:
-        """
-        if isinstance(value, bool):
-            return "true" if value else "false"
-
-        return "'%s'" % str(value).replace("\\", "\\\\").replace("'", "\\'")

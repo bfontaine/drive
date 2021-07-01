@@ -8,6 +8,7 @@ from typing import List
 def _get_relative_path(file_path: str) -> str:
     return os.path.join(os.path.dirname(__file__), file_path)
 
+
 def load_requirements() -> List[str]:
     # Load requirements
     requirements = []  # type: List[str]
@@ -44,6 +45,8 @@ def main():
             'License :: OSI Approved :: MIT License',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
         ],
         entry_points={
             "console_scripts": [
@@ -52,6 +55,7 @@ def main():
             ]
         }
     )
+
 
 if __name__ == "__main__":
     main()

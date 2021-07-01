@@ -2,8 +2,8 @@
 
 import io
 import json
-
-from typing import List
+from typing import Optional, List
+from openpyxl.workbook import Workbook
 
 import drive
 from drive import mimetypes
@@ -20,8 +20,7 @@ class File:
         :param attrs:
         :param client:
         """
-        # If one calls File(File(...)) make the outer file copy the attributes
-        # of the inner one
+        # If one calls File(File(...)) make the outer file copy the attributes of the inner one
         if isinstance(attrs, File):
             for attr in ("id", "_name", "kind", "mimetype", "size", "parents", "_client"):
                 setattr(self, attr, getattr(attrs, attr))
@@ -70,7 +69,7 @@ class File:
         if self.mimetype in aliases:
             return aliases[self.mimetype]
 
-        if self.name.lower().endswith(".jsons"):
+        if self.name and self.name.lower().endswith(".jsons"):
             return "JSONS"
 
         return self.mimetype or "?"
@@ -78,10 +77,9 @@ class File:
     def exists(self):
         """
         Test if the file exists.
-        :return:
         """
         if not self._client:
-            return False
+            return None
 
         return bool(self._client.get_file(self.id, raise_if_not_found=False, supports_all_drives=self.supports_all_drives))
 
@@ -165,18 +163,19 @@ class File:
 
     def grant_permissions(self, role: str, type_: str):
         if not self._client:
-            return False
+            return None
 
         return self._client.grant_file_permissions(self.id, role, type_, supports_all_drives=self.supports_all_drives)
 
-    def get_child(self, name: str):
+    def get_child(self, name):
         """
+        Get a child file. Return None if the current file is not a directory.
 
         :param name:
         :return:
         """
         if not self._client or not self.is_directory:
-            return False
+            return None
 
         return self._client.get_file(name, self.id, supports_all_drives=self.supports_all_drives)
 
@@ -235,16 +234,17 @@ class File:
         :return:
         """
         if not self._client:
-            return False
+            return None
         return self._client.download_file(self.id, path, mime_type=mime_type, supports_all_drives=self.supports_all_drives)
 
-    def download_workbook(self):
+    def download_workbook(self, read_only=False) -> Optional[Workbook]:
         """
 
+        :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return:
         """
         if not self._client:
-            return False
+            return None
         return self._client.download_excel_workbook(self.id, supports_all_drives=self.supports_all_drives)
 
     def get_bytes(self, mime_type=None):

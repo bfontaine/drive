@@ -2,6 +2,10 @@
 
 Google Drive client.
 
+## Install
+
+    pip install drive
+
 ## Usage
 
 The API exposes a client as `drive.client.Client` that manipulates instances of
@@ -96,7 +100,9 @@ cl = Client()
 
 # Download
 f = cl.get_file_by_name("my_sheet")
-workbook = f.download_workbook() # readonly openpyxl workbook
+workbook = f.download_workbook()  # openpyxl workbook
+# save your download:
+workbook.save("myfile.xlsx")
 
 # Upload
 workbook = Workbook()
@@ -114,6 +120,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2020 Oscaro.com
+Copyright © 2016-2021 Oscaro.com
 
 Distributed under the MIT License.
