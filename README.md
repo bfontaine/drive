@@ -129,6 +129,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2021 Oscaro.com
+Copyright © 2016-2022 Baptiste Fontaine
 
 Distributed under the MIT License.
