@@ -33,10 +33,10 @@ def handle_progressless_iter(error, progressless_iters):
         print('Failed to make progress for too many consecutive iterations.')
         raise error
 
-    sleeptime = random.random() * (2 ** progressless_iters)
+    sleep_time = random.random() * (2 ** progressless_iters)
     print('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
-          % (str(error), sleeptime, progressless_iters))
-    time.sleep(sleeptime)
+          % (str(error), sleep_time, progressless_iters))
+    time.sleep(sleep_time)
 
 
 def print_with_carriage_return(s):
@@ -51,13 +51,10 @@ def print_with_carriage_return(s):
 
 def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
     """
-    Make a "and" query string by combining all clauses. Each clause is a
+    Make an "and" query string by combining all clauses. Each clause is a
     3-elements tuple of ``(field, operator, value)``. Refer to the
     following link for more information:
         https://developers.google.com/drive/v3/web/search-parameters
-    :param clauses:
-    :param join:
-    :return:
     """
     parts = []
     for field, op, value in clauses:
@@ -67,19 +64,11 @@ def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
 
 
 def _make_query_clause(field: str, op: str, value, negation=False) -> str:
-    """
-
-    :param field:
-    :param op:
-    :param value:
-    :param negation:
-    :return:
-    """
-    svalue = _serialize_query_value(value)
+    serialized_value = _serialize_query_value(value)
     if op == "in":
-        p = "%s %s %s" % (svalue, op, field)
+        p = "%s %s %s" % (serialized_value, op, field)
     else:
-        p = "%s %s %s" % (field, op, svalue)
+        p = "%s %s %s" % (field, op, serialized_value)
     if negation:
         p = "not %s" % p
     return p
@@ -88,8 +77,6 @@ def _make_query_clause(field: str, op: str, value, negation=False) -> str:
 def _serialize_query_value(value):
     """
     Serialize a query value.
-    :param value:
-    :return:
     """
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -120,12 +107,6 @@ class Client:
         return self.service.permissions()
 
     def create_folder(self, name: str, parent_id: str):
-        """
-
-        :param name:
-        :param parent_id:
-        :return:
-        """
         file_metadata = {
             "name": name,
             "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER,
@@ -138,9 +119,6 @@ class Client:
     def get_or_create_folder(self, folder_name: str, parent_id: Optional[str] = None):
         """
         Get the ID for the folder with name folder_name, creating it if it doesn't exist.
-        :param folder_name:
-        :param parent_id:
-        :return: drive.File
         """
 
         folder_list = self.list_files(name_equals=folder_name,
@@ -158,20 +136,10 @@ class Client:
     def remove_file(self, file_id: str):
         """
         Remove a file by its id.
-
-        :param file_id:
-        :return:
         """
         return self._files.delete(fileId=file_id).execute()
 
     def get_file_metadata(self, file_id, raise_if_not_found=True, **kw):
-        """
-
-        :param file_id:
-        :param raise_if_not_found:
-        :param kw:
-        :return:
-        """
         try:
             return self._files.get(fileId=file_id, **kw).execute()
         except HttpError as e:
@@ -184,7 +152,6 @@ class Client:
         Get a file by its id.
         :param file_id:
         :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
-        :return:
         """
         fm = self.get_file_metadata(file_id, raise_if_not_found)
         if fm:
@@ -198,7 +165,6 @@ class Client:
 
         :param name: Drive filename
         :param parent_id: optional parent id.
-        :return:
         :raise: ``drive.exceptions.FileNotFoundException`` if the file doesn’t exist
         """
         kw = dict(name_equals=name, n=1)
@@ -237,7 +203,6 @@ class Client:
     def files_shared_with_me(self) -> List[File]:
         """
         Return a list of files (and 'directories') 'shared with me'.
-        :return:
         """
         return self._execute_file_request(self._files.list(q="sharedWithMe=true"))
 
@@ -246,13 +211,8 @@ class Client:
                         raise_if_not_found=True) -> Optional[File]:
         """
         Retrieve a shared file.
-        If ``is_directory`` is a boolean, it’s used to filter files that are (or not) directories. By default the first
+        If ``is_directory`` is a boolean, it’s used to filter files that are (or not) directories. By default, the first
         matching file is returned without checking if it’s a directory or not.
-
-        :param name:
-        :param is_directory:
-        :param raise_if_not_found:
-        :return:
         """
         for shared in self.files_shared_with_me():
             if shared.name == name:
@@ -269,15 +229,12 @@ class Client:
     def get_shared_directory(self, name: str) -> Optional[File]:
         """
         Retrieve a shared directory. This is a shortcut for ``get_shared_file(name, is_directory=True)``.
-        :param name:
-        :return:
         """
         return self.get_shared_file(name, is_directory=True)
 
     def root(self) -> File:
         """
         Return the root directory. Note the alias ``"root"`` works as an alias file id for the root directory.
-        :return:
         """
         return self.get_file("root")
 
@@ -289,12 +246,6 @@ class Client:
                    n=100):
         """
         Outputs the names and IDs for up to N files.
-        :param name_equals:
-        :param name_contains:
-        :param mimetype:
-        :param parents_in:
-        :param n:
-        :return:
         """
 
         query_clauses = [("trashed", "=", False)]
@@ -317,15 +268,6 @@ class Client:
                     add_parents_ids=None,
                     name: Optional[str] = None,
                     media=None):
-        """
-
-        :param file_id:
-        :param remove_parents_ids:
-        :param add_parents_ids:
-        :param name:
-        :param media:
-        :return:
-        """
         kw = dict(fileId=file_id)
         if remove_parents_ids:
             kw["removeParents"] = ",".join(remove_parents_ids)
@@ -343,24 +285,12 @@ class Client:
         return self._execute_file_request(self._files.update(**kw))
 
     def move_file_to_folder(self, file_id: str, folder_id: str):
-        """
-
-        :param file_id:
-        :param folder_id:
-        :return:
-        """
         # Retrieve the existing parents to remove
         resp = self._files.get(fileId=file_id, fields='parents').execute()
 
         return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"])
 
     def rename_file(self, file_id: str, name: str):
-        """
-
-        :param file_id:
-        :param name:
-        :return:
-        """
         return self.update_file(file_id, name=name)
 
     def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
@@ -386,6 +316,7 @@ class Client:
 
         downloader = MediaIoBaseDownload(writer, fn(**kw))
         # bypass the downloader; there appear to be a bug for large files
+        # noinspection PyProtectedMember
         writer.write(downloader._request.execute())
 
     def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None) -> None:
@@ -511,30 +442,15 @@ class Client:
                            mimetypes.XLSX, update_existing=update_existing)
 
     def grant_file_permissions(self, file_id: str, role: str, type_: str):
-        """
-        :param file_id:
-        :param role:
-        :param type_:
-        :return:
-        """
         return self._permissions.create(fileId=file_id, body={"role": role, "type": type_}).execute()
 
     def get_web_view_link(self, file_id: str) -> str:
-        """
-        :param file_id:
-        :return:
-        """
         resp = self._files.get(fileId=file_id, fields='webViewLink').execute()
         return resp['webViewLink']
 
     # Private API
 
     def _execute_file_request(self, req):
-        """
-
-        :param req:
-        :return:
-        """
         if not req.resumable:
             resp = req.execute()
             if "files" in resp:
