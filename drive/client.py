@@ -5,13 +5,13 @@ import os.path
 import random
 import sys
 import time
-from typing import Optional, List, Any, Tuple
+from typing import Optional, List, Any, Tuple, Dict, cast, Iterable
 
-import httplib2
-import openpyxl
-from apiclient import discovery
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+import httplib2  # type: ignore
+import openpyxl  # type: ignore
+from apiclient import discovery  # type: ignore
+from googleapiclient.errors import HttpError  # type: ignore
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload  # type: ignore
 
 from drive import mimetypes
 from drive.auth import authorize, get_credentials
@@ -22,6 +22,8 @@ from drive.files import File
 RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
 # Default number of bytes to send/receive in each request.
 CHUNKSIZE = 2 * 1024 * 1024
+
+QueryClause = Tuple[str, str, Any]
 
 
 def handle_progressless_iter(error, progressless_iters, *, retries_count=5):
@@ -45,7 +47,7 @@ def print_with_carriage_return(s):
     sys.stdout.flush()
 
 
-def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
+def _make_querystring(clauses: Iterable[QueryClause], join="and"):
     """
     Make an "and" query string by combining all clauses.
     Each clause is a 3-elements tuple of ``(field, operator, value)``.
@@ -99,8 +101,8 @@ class Client:
     def _permissions(self):
         return self.service.permissions()
 
-    def create_folder(self, name: str, parent_id: str):
-        file_metadata = {
+    def create_folder(self, name: str, parent_id: Optional[str] = None):
+        file_metadata: Dict[str, Any] = {
             "name": name,
             "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER,
         }
@@ -122,7 +124,7 @@ class Client:
             if len(folder_list) == 1:
                 return File(folder_list[0], client=self)
 
-            raise NameError("Unable to find folder %s" % folder_name)
+            raise RuntimeError("Unable to find folder %s" % folder_name)
 
         return self.create_folder(folder_name, parent_id)
 
@@ -143,6 +145,7 @@ class Client:
     def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
         """
         Get a file by its id.
+
         :param file_id:
         :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
         """
@@ -161,10 +164,7 @@ class Client:
         :param parent_id: optional parent id.
         :raise: ``drive.exceptions.FileNotFoundException`` if the file doesn’t exist
         """
-        kw = dict(name_equals=name, n=1)
-        if parent_id:
-            kw["parents_in"] = parent_id
-        ls = self.list_files(**kw)
+        ls = self.list_files(name_equals=name, n=1, parents_in=parent_id)
         if not ls:
             raise FileNotFoundException(name)
 
@@ -191,7 +191,7 @@ class Client:
 
         files = self.list_files(name_equals=name, parents_in=parent_id, n=1)
         if not files:
-            return
+            return None
         return files[0]
 
     def files_shared_with_me(self) -> List[File]:
@@ -220,6 +220,8 @@ class Client:
         if raise_if_not_found:
             raise FileNotFoundException(name)
 
+        return None
+
     def get_shared_directory(self, name: str) -> Optional[File]:
         """
         Retrieve a shared directory. This is a shortcut for ``get_shared_file(name, is_directory=True)``.
@@ -230,19 +232,19 @@ class Client:
         """
         Return the root directory. Note the alias ``"root"`` works as an alias file id for the root directory.
         """
-        return self.get_file("root")
+        return cast(File, self.get_file("root"))
 
     def list_files(self,
                    name_equals: Optional[str] = None,
                    name_contains: Optional[str] = None,
                    mimetype: Optional[str] = None,
-                   parents_in=None,
+                   parents_in: Optional[str] = None,
                    n=100):
         """
         Return the names and IDs for up to N files.
         """
 
-        query_clauses = [("trashed", "=", False)]
+        query_clauses: List[QueryClause] = [("trashed", "=", False)]
 
         if name_equals:
             query_clauses.append(("name", "=", name_equals))
@@ -261,22 +263,41 @@ class Client:
                     remove_parents_ids=None,
                     add_parents_ids=None,
                     name: Optional[str] = None,
-                    media=None):
-        kw = dict(fileId=file_id)
+                    media=None,
+                    force=False):
+        """
+        Update a file.
+
+        Note: calling this function with only a file id (e.g.: `update_file(my_id)`) without any modification is a no-op
+          unless `force=True` is passed.
+
+        :param file_id: id of the file to update
+        :param remove_parents_ids:
+        :param add_parents_ids:
+        :param name: new name of the file
+        :param media:
+        :param force: force update even if there are no modifications
+        :return:
+        """
+        modified = force or remove_parents_ids or add_parents_ids or name or media
+        if not modified:
+            return
+
+        kw: Dict[str, Any] = {}
+
         if remove_parents_ids:
             kw["removeParents"] = ",".join(remove_parents_ids)
+
         if add_parents_ids:
             kw["addParents"] = ",".join(add_parents_ids)
+
         if name:
             kw["body"] = {"name": name}
 
         if media:
             kw["media_body"] = media
 
-        if len(kw) == 1:  # No modification, only fileId
-            return
-
-        return self._execute_file_request(self._files.update(**kw))
+        return self._execute_file_request(self._files.update(fileId=file_id, **kw))
 
     def move_file_to_folder(self, file_id: str, folder_id: str):
         # Retrieve the existing parents to remove

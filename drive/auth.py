@@ -1,11 +1,11 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import httplib2
+import httplib2  # type: ignore
 from os import environ
 from typing import Optional
 
-from oauth2client.service_account import ServiceAccountCredentials
+from oauth2client.service_account import ServiceAccountCredentials  # type: ignore
 
 from drive.exceptions import DriveException
 

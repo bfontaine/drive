@@ -5,6 +5,9 @@
 * Use `google-api-python-client` 2.64.0+
 * Use minimum versions for dependencies instead of strict versions
 * Add `download_retries_count` optional keyword argument to `Client`
+* `get_or_create_folder` now raises `RuntimeError` instead of `NameError` if there is an issue finding the folder
+* Fix type hints of `create_folder`
+* Add `py.typed` to indicate that this module is typed
 * Use Poetry to manage the project
 
 ## 0.3.2 (2021/06/02)

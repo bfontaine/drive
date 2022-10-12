@@ -2,9 +2,9 @@
 
 import io
 import json
-from typing import Optional
+from typing import Optional, Union, cast, Dict, Any
 
-from openpyxl.workbook import Workbook
+from openpyxl.workbook import Workbook  # type: ignore
 
 import drive
 from drive import mimetypes
@@ -176,7 +176,7 @@ class File:
         if not self._client or not self.is_directory:
             return None
 
-        return self._client.get_file(name, self.id)
+        return cast(File, self._client.get_file(name, self.id))
 
     def parents(self):
         """
@@ -309,16 +309,19 @@ class File:
 
     # Private API
 
-    def _update(self, attrs):
+    def _update(self, attrs: Union["File", Dict[str, Any]]):
         """
-        Update the current file instance with an attributes dict.
+        Update the current file instance with a dict of attributes.
         :param attrs:
         :return:
         """
         if not attrs:
             return
+
         if isinstance(attrs, File):
             attrs = attrs.to_dict()
+
+        attrs = cast(Dict[str, Any], attrs)
 
         # Add other fields as needed
         name = attrs.get("name")
