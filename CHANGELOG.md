@@ -1,6 +1,6 @@
 # Drive Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2022/10/12)
 
 * Use `google-api-python-client` 2.64.0+
 * Use minimum versions for dependencies instead of strict versions
