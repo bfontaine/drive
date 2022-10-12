@@ -1,5 +1,12 @@
 # Drive Changelog
 
+## 0.4.0 (unreleased)
+
+* Use `google-api-python-client` 2.64.0+
+* Use minimum versions for dependencies instead of strict versions
+* Add `download_retries_count` optional keyword argument to `Client`
+* Use Poetry to manage the project
+
 ## 0.3.2 (2021/06/02)
 
 * Use `google-api-python-client` 2.7.0

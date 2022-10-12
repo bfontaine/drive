@@ -20,16 +20,12 @@ from drive.files import File
 
 # Retry transport and file IO errors.
 RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
-
-# Number of times to retry failed downloads.
-NUM_RETRIES = 5
-
-# Number of bytes to send/receive in each request.
+# Default number of bytes to send/receive in each request.
 CHUNKSIZE = 2 * 1024 * 1024
 
 
-def handle_progressless_iter(error, progressless_iters):
-    if progressless_iters > NUM_RETRIES:
+def handle_progressless_iter(error, progressless_iters, *, retries_count=5):
+    if progressless_iters > retries_count:
         print('Failed to make progress for too many consecutive iterations.')
         raise error
 
@@ -51,9 +47,9 @@ def print_with_carriage_return(s):
 
 def _make_querystring(clauses: List[Tuple[str, str, Any]], join="and"):
     """
-    Make an "and" query string by combining all clauses. Each clause is a
-    3-elements tuple of ``(field, operator, value)``. Refer to the
-    following link for more information:
+    Make an "and" query string by combining all clauses.
+    Each clause is a 3-elements tuple of ``(field, operator, value)``.
+    Refer to the following link for more information:
         https://developers.google.com/drive/v3/web/search-parameters
     """
     parts = []
@@ -89,14 +85,11 @@ class Client:
     Google Drive client
     """
 
-    def __init__(self, credentials_path: Optional[str] = None):
-        """
-
-        :param credentials_path:
-        """
+    def __init__(self, credentials_path: Optional[str] = None, *, download_retries_count=5):
         credentials = get_credentials(credentials_path)
         http = authorize(credentials)
         self.service = discovery.build('drive', 'v3', http=http)
+        self.download_retries_count = download_retries_count
 
     @property
     def _files(self):
@@ -142,10 +135,10 @@ class Client:
     def get_file_metadata(self, file_id, raise_if_not_found=True, **kw):
         try:
             return self._files.get(fileId=file_id, **kw).execute()
-        except HttpError as e:
+        except HttpError:
             if not raise_if_not_found:
                 return None
-            raise e
+            raise
 
     def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
         """
@@ -156,6 +149,7 @@ class Client:
         fm = self.get_file_metadata(file_id, raise_if_not_found)
         if fm:
             return File(fm, client=self)
+        return None
 
     def get_file_by_name(self, name: str, parent_id: Optional[str] = None) -> Optional[File]:
         """
@@ -245,7 +239,7 @@ class Client:
                    parents_in=None,
                    n=100):
         """
-        Outputs the names and IDs for up to N files.
+        Return the names and IDs for up to N files.
         """
 
         query_clauses = [("trashed", "=", False)]
@@ -291,6 +285,9 @@ class Client:
         return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"])
 
     def rename_file(self, file_id: str, name: str):
+        """
+        Rename a file.
+        """
         return self.update_file(file_id, name=name)
 
     def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
@@ -458,30 +455,29 @@ class Client:
             if "file" in resp:
                 return File(resp["file"], client=self)
             return File(resp, client=self)
-        else:
-            progressless_iters = 0
-            response = None
-            progress = None
-            while response is None:
-                error = None
-                try:
-                    progress, response = req.next_chunk()
-                    if progress:
-                        print_with_carriage_return('Upload %d%%' %
-                                                   (100 * progress.progress()))
-                except HttpError as err:
-                    error = err
-                    if err.resp.status < 500:
-                        raise
-                except RETRYABLE_ERRORS as err:
-                    error = err
 
-                if error:
-                    progressless_iters += 1
-                    handle_progressless_iter(error, progressless_iters)
-                else:
-                    progressless_iters = 0
+        progressless_iters = 0
+        response = None
+        progress = None
+        while response is None:
+            error = None
+            try:
+                progress, response = req.next_chunk()
+                if progress:
+                    print_with_carriage_return('Upload %d%%' % (100 * progress.progress()))
+            except HttpError as err:
+                error = err
+                if err.resp.status < 500:
+                    raise
+            except RETRYABLE_ERRORS as err:
+                error = err
 
-            if progress:
-                print_with_carriage_return('Upload %d%%' %
-                                           (100 * progress.progress()))
+            if error:
+                progressless_iters += 1
+                handle_progressless_iter(error, progressless_iters, retries_count=self.download_retries_count)
+            else:
+                progressless_iters = 0
+
+        if progress:
+            print_with_carriage_return('Upload %d%%' %
+                                       (100 * progress.progress()))
