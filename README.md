@@ -4,7 +4,11 @@ Google Drive client.
 
 ## Install
 
-    pip install drive
+    python -m pip install drive
+
+With Poetry:
+
+    poetry add drive
 
 ## Usage
 
@@ -96,6 +100,9 @@ d = cl.get_shared_directory("My Shared Dir")
 #### Spreadsheets
 
 ```python
+from drive.client import Client
+from openpyxl import Workbook
+
 cl = Client()
 
 # Download
@@ -113,6 +120,8 @@ cl.upload_excel_workbook(d, "my_other_sheet", workbook)
 #### Drawings
 
 ```python
+from drive.client import Client
+
 cl = Client()
 # download a Drawing in a png image
 cl.download_file("11AASomeFileId", "localfile.png", "image/png")
