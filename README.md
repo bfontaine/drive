@@ -10,6 +10,12 @@ With Poetry:
 
     poetry add drive
 
+You also need to have `libmagic` installed to get automatic detection of uploaded files’ MIME types. If you don’t have
+it, you must provide the `original_mime_type` keyword argument when you upload a file.
+On Linux, if you do have `libmagic` but Python can’t see it, see this [StackOverflow question][so].
+
+[so]: https://stackoverflow.com/q/7880454/735926
+
 ## Usage
 
 The API exposes a client as `drive.client.Client` that manipulates instances of
@@ -27,7 +33,6 @@ given by the environment variable `GOOGLE_APPLICATION_CREDENTIALS`. You can
 override this behavior by passing it directly:
 
     client = Client("/path/to/your/service-account-key.json")
-
 
 See Google’s documentation on [how to create a service account key][k].
 
@@ -86,8 +91,8 @@ cl = Client()
 
 # Get the root directory
 d = cl.root()
-print(d.is_directory) # True
-print(d.name) # e.g. "My Drive"
+print(d.is_directory)  # True
+print(d.name)  # e.g. "My Drive"
 
 # Get a directory's content
 for f in d.list():

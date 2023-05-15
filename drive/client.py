@@ -16,7 +16,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload  # type:
 from drive import mimetypes
 from drive.auth import authorize, get_credentials
 from drive.exceptions import FileNotFoundException
-from drive.files import File
+from drive.files import File, guess_original_mime_type
 
 # Retry transport and file IO errors.
 RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
@@ -367,12 +367,12 @@ class Client:
                update_existing=False,
                resumable=False):
         """
-
         :param parent_id:
         :param name: remote filename
         :param reader: binary file reader
-        :param mime_type:
-        :param original_mime_type:
+        :param mime_type: target MIME type.
+        :param original_mime_type: Original MIME type. If ``None``, it is determined using libmagic, which must be
+            installed.
         :param update_existing:
         :param resumable:
         :return:
@@ -382,11 +382,7 @@ class Client:
             parent_id = parent_id.id
 
         if not original_mime_type:
-            import magic
-            pos = reader.tell()
-            buff = reader.read(1024)
-            reader.seek(pos)
-            original_mime_type = magic.from_buffer(buff, mime=True)
+            original_mime_type = guess_original_mime_type(reader)
 
         media = MediaIoBaseUpload(reader, mimetype=original_mime_type,
                                   chunksize=CHUNKSIZE,
@@ -414,12 +410,12 @@ class Client:
                     original_mime_type: Optional[str] = None,
                     update_existing=False):
         """
-
         :param parent_id:
         :param path: local path
         :param name: remote filename. If ``None``, use the local basename.
         :param mime_type:
-        :param original_mime_type:
+        :param original_mime_type: Original MIME type. If ``None``, it is determined using libmagic, which must be
+            installed.
         :param update_existing:
         :return:
         """

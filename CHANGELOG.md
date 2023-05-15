@@ -1,5 +1,10 @@
 # Drive Changelog
 
+## Unreleased
+
+* Raise a more explicit exception when `upload()` or `upload_file()` is used without an explicit `original_mime_type`
+  and libmagic is not installed (#11).
+
 ## 0.4.0 (2022/10/12)
 
 * Use `google-api-python-client` 2.64.0+

@@ -2,7 +2,7 @@
 
 import io
 import json
-from typing import Optional, Union, cast, Dict, Any
+from typing import Optional, Union, cast, Dict, Any, BinaryIO
 
 from openpyxl.workbook import Workbook  # type: ignore
 
@@ -331,3 +331,21 @@ class File:
         parents = attrs.get("parents")
         if parents:
             self.parents_ids = parents
+
+
+def guess_original_mime_type(reader: BinaryIO):
+    """
+    Guess the MIME type of the content in a reader. Read 1024 bits, then seek the reader back to its original position.
+    """
+    try:
+        import magic
+    except ImportError as e:
+        if str(e).startswith("failed to find libmagic"):
+            raise RuntimeError("original_mime_type is None and we can't guess it because libmagic is not installed.") \
+                from e
+        raise
+
+    pos = reader.tell()
+    buff = reader.read(1024)
+    reader.seek(pos)
+    return magic.from_buffer(buff, mime=True)

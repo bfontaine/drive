@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
+import io
 
-from drive.files import File
+from drive.files import File, guess_original_mime_type
 from drive import mimetypes
 
 
@@ -27,3 +28,12 @@ def test_human_type():
 
 def test_exists():
     assert File({"id": "xx"}).exists() is None
+
+
+def test_guess_mime_type_preserve_reader_position():
+    r = io.BytesIO()
+    r.write(b"foobar")
+    offset = 4
+    r.seek(offset)
+    guess_original_mime_type(r)
+    assert r.tell() == offset

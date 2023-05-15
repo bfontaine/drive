@@ -4,6 +4,12 @@
 
     poetry run pytest
 
+On Linux, you may have to do this:
+
+    LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu poetry run pytest
+
+(FIXME: fix the underlying issue)
+
 ## Release a new version
 
 Ensure you have up-to-date distributing tools:
