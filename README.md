@@ -129,6 +129,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2022 Baptiste Fontaine
+Copyright © 2016-2023 Baptiste Fontaine
 
 Distributed under the MIT License.
