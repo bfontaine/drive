@@ -72,10 +72,10 @@ def _make_query_clause(field: str, op: str, value, negation=False) -> str:
     return p
 
 
-def _resolve_parent_id(parent_id: Union[File, str]):
-    if isinstance(parent_id, File):
-        return parent_id.id
-    return parent_id
+def _resolve_parent_id(parent: Union[File, str]):
+    if isinstance(parent, File):
+        return parent.id
+    return parent
 
 
 def _serialize_query_value(value):
@@ -136,7 +136,7 @@ class Client:
 
     def remove_file(self, file_id: str):
         """
-        Remove a file by its id.
+        Remove a file by its ID.
         """
         return self._files.delete(fileId=file_id).execute()
 
@@ -150,7 +150,7 @@ class Client:
 
     def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
         """
-        Get a file by its id.
+        Get a file by its ID.
 
         :param file_id:
         :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
@@ -163,11 +163,11 @@ class Client:
     def get_file_by_name(self, name: str, parent_id: Optional[str] = None) -> Optional[File]:
         """
         Get a file by name.
-        Note that, unlike ids, names are not guaranteed to be unique: you can have multiple files with the same name
+        Note that, unlike IDs, names are not guaranteed to be unique: you can have multiple files with the same name
         on Google Drive.
 
         :param name: Drive filename
-        :param parent_id: optional parent id.
+        :param parent_id: optional parent ID.
         :raise: ``drive.exceptions.FileNotFoundException`` if the file doesn’t exist
         """
         ls = self.list_files(name_equals=name, n=1, parents_in=parent_id)
@@ -236,7 +236,7 @@ class Client:
 
     def root(self) -> File:
         """
-        Return the root directory. Note the alias ``"root"`` works as an alias file id for the root directory.
+        Return the root directory. Note the alias ``"root"`` works as an alias file ID for the root directory.
         """
         return cast(File, self.get_file("root"))
 
@@ -274,10 +274,10 @@ class Client:
         """
         Update a file.
 
-        Note: calling this function with only a file id (e.g.: `update_file(my_id)`) without any modification is a no-op
+        Note: calling this function with only a file ID (e.g.: `update_file(my_id)`) without any modification is a no-op
           unless `force=True` is passed.
 
-        :param file_id: id of the file to update
+        :param file_id: ID of the file to update
         :param remove_parents_ids:
         :param add_parents_ids:
         :param name: new name of the file
@@ -346,7 +346,7 @@ class Client:
     def download_file(self, file_id: str, path: str, mime_type: Optional[str] = None) -> None:
         """
         Download a file and save it locally.
-        :param file_id: file id
+        :param file_id: file ID
         :param path: local path where to save the file.
         :param mime_type: optional mime type
         :return:
@@ -357,6 +357,7 @@ class Client:
     def download_excel_workbook(self, file_id: str, read_only=False):
         """
         Download a Google Spreadsheet as an openpyxl workbook.
+
         :param file_id:
         :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return: ``openpyxl.Workbook`` object.
@@ -440,7 +441,7 @@ class Client:
         """
         Upload an openpyxl (Excel) workbook and convert it to a Google Spreadsheet, unless ``as_spreadsheet`` is false.
 
-        :param parent: parent id
+        :param parent: parent ID
         :param name: remote filename
         :param workbook: ``openpyxl.Workbook`` object
         :param as_spreadsheet: if ``True`` (default), convert the document to a Google Spreadsheet
