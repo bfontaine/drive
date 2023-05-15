@@ -5,7 +5,7 @@ import os.path
 import random
 import sys
 import time
-from typing import Optional, List, Any, Tuple, Dict, cast, Iterable
+from typing import Optional, List, Any, Tuple, Dict, cast, Iterable, Union
 
 import httplib2  # type: ignore
 import openpyxl  # type: ignore
@@ -360,7 +360,7 @@ class Client:
         buff.seek(0)
         return openpyxl.load_workbook(buff, read_only=read_only)
 
-    def upload(self, parent_id: str, name: str,
+    def upload(self, parent_id: Union[str, File], name: str,
                reader,
                mime_type: Optional[str] = None,
                original_mime_type: Optional[str] = None,
@@ -404,7 +404,7 @@ class Client:
         return self._execute_file_request(self._files.create(body=metadata,
                                                              media_body=media))
 
-    def upload_file(self, parent_id: str, path: str,
+    def upload_file(self, parent_id: Union[str, File], path: str,
                     name: Optional[str] = None,
                     mime_type: Optional[str] = None,
                     original_mime_type: Optional[str] = None,
@@ -419,9 +419,6 @@ class Client:
         :param update_existing:
         :return:
         """
-        if isinstance(parent_id, File):
-            parent_id = parent_id.id
-
         if name is None:
             name = os.path.basename(path)
 
@@ -431,7 +428,7 @@ class Client:
                                update_existing=update_existing)
 
     def upload_excel_workbook(self,
-                              parent: str,
+                              parent: Union[str, File],
                               name: str,
                               workbook: openpyxl.Workbook,
                               as_spreadsheet=True,
