@@ -307,9 +307,8 @@ class Client:
 
     def move_file_to_folder(self, file_id: str, folder_id: str):
         # Retrieve the existing parents to remove
-        resp = self._files.get(fileId=file_id, fields='parents').execute()
-
-        return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=resp["parents"])
+        parent_ids = self._get_file_field(file_id, "parents")
+        return self.update_file(file_id, add_parents_ids=[folder_id], remove_parents_ids=parent_ids)
 
     def rename_file(self, file_id: str, name: str):
         """
@@ -461,8 +460,11 @@ class Client:
         return self._permissions.create(fileId=file_id, body={"role": role, "type": type_}).execute()
 
     def get_web_view_link(self, file_id: str) -> str:
-        resp = self._files.get(fileId=file_id, fields='webViewLink').execute()
-        return resp['webViewLink']
+        return self._get_file_field(file_id, "webViewLink")
+
+    def _get_file_field(self, file_id: str, field: str):
+        resp = self._files.get(fileId=file_id, fields=field).execute()
+        return resp[field]
 
     # Private API
 
