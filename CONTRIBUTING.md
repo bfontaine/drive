@@ -12,12 +12,6 @@ On Linux, you may have to do this:
 
 ## Release a new version
 
-Ensure you have up-to-date distributing tools:
-
-    python3 -m pip install --upgrade pip setuptools wheel twine
-
-Then:
-
 1. Update the CHANGELOG
 2. Update the version in `pyproject.toml` and in `drive/__init__.py`
 3. Commit and tag with `v` followed by the version (e.g. `git tag v1.1.1`)
