@@ -1,6 +1,6 @@
 # Drive Changelog
 
-## Unreleased
+## 0.4.1 (2023/05/15)
 
 * Raise a more explicit exception when `upload()` or `upload_file()` is used without an explicit `original_mime_type`
   and libmagic is not installed (#11).
