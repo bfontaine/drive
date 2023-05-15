@@ -72,6 +72,12 @@ def _make_query_clause(field: str, op: str, value, negation=False) -> str:
     return p
 
 
+def _resolve_parent_id(parent_id: Union[File, str]):
+    if isinstance(parent_id, File):
+        return parent_id.id
+    return parent_id
+
+
 def _serialize_query_value(value):
     """
     Serialize a query value.
@@ -377,9 +383,7 @@ class Client:
         :param resumable:
         :return:
         """
-
-        if isinstance(parent_id, File):
-            parent_id = parent_id.id
+        parent_id_str = _resolve_parent_id(parent_id)
 
         if not original_mime_type:
             original_mime_type = guess_original_mime_type(reader)
@@ -389,13 +393,13 @@ class Client:
                                   resumable=resumable)
 
         if update_existing:
-            f = self.file_exists(name=name, parent_id=parent_id)
+            f = self.file_exists(name=name, parent_id=parent_id_str)
             if f:
                 return self.update_file(f.id, media=media)
 
         metadata = {
             'name': name,
-            'parents': [parent_id],
+            'parents': [parent_id_str],
         }
 
         if mime_type:
