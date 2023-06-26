@@ -4,7 +4,7 @@ import io
 import json
 from typing import Optional, Union, cast, Dict, Any, BinaryIO
 
-from openpyxl.workbook import Workbook  # type: ignore
+from openpyxl.workbook import Workbook
 
 import drive
 from drive import mimetypes

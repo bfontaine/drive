@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import httplib2  # type: ignore
+import httplib2
 from os import environ
 from typing import Optional
 

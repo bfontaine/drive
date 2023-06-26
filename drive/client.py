@@ -7,8 +7,8 @@ import sys
 import time
 from typing import Optional, List, Any, Tuple, Dict, cast, Iterable, Union
 
-import httplib2  # type: ignore
-import openpyxl  # type: ignore
+import httplib2
+import openpyxl
 from apiclient import discovery  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload  # type: ignore

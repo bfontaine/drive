@@ -685,6 +685,30 @@ files = [
 ]
 
 [[package]]
+name = "types-httplib2"
+version = "0.22.0.1"
+description = "Typing stubs for httplib2"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-httplib2-0.22.0.1.tar.gz", hash = "sha256:15eade042987b1c32a416539fb993566663cb9faf669bdec45a74777d4c3a9c6"},
+    {file = "types_httplib2-0.22.0.1-py3-none-any.whl", hash = "sha256:bca548cc530f9cfc63f0d8a74bbc5e159ab12ad380ba2a5ac4c7a4f548646c2d"},
+]
+
+[[package]]
+name = "types-openpyxl"
+version = "3.1.0.13"
+description = "Typing stubs for openpyxl"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-openpyxl-3.1.0.13.tar.gz", hash = "sha256:ded13c25719273208bf450ab22eddc9e822d02e008d8b9f4011dfd12d0ca0a8f"},
+    {file = "types_openpyxl-3.1.0.13-py3-none-any.whl", hash = "sha256:22bde5f20327783a3ac742ec892916c694604bc32d3c87031afd97b824fde0b1"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.6.3"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -728,4 +752,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "a85821f957f79658c2e43328861167364884f2cac3bd295f593765f8c7857b09"
+content-hash = "1a0579f00eaf7dbe59b65593de32b76c1b24266ea995713fc069a0b3762b9a03"
