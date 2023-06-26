@@ -1,5 +1,14 @@
 # Drive Changelog
 
+## 0.4.2 (2023/06/26)
+
+* Fix `get_credentials` to respect `ENV_CLIENT_SECRET_PATH`
+* Raise a `MissingCredentialsException` instead of `KeyError` if no credentials are given
+  and `GOOGLE_APPLICATION_CREDENTIALS` is not set
+* Add `auth.authorize_credentials` as a shortcut for `authorize(get_credentials(…))`
+* Add a basic, experimental Google Sheets client in `drive.sheets`. The code is production-ready but the API may change
+  in the future.
+
 ## 0.4.1 (2023/05/15)
 
 * Raise a more explicit exception when `upload()` or `upload_file()` is used without an explicit `original_mime_type`

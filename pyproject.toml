@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drive"
-version = "0.4.1"
+version = "0.4.2"
 description = "Google Drive client"
 authors = ["Baptiste Fontaine <b@ptistefontaine.fr>"]
 license = "MIT"
