@@ -11,7 +11,7 @@ from drive.exceptions import DriveException
 
 ENV_CLIENT_SECRET_PATH = "GOOGLE_APPLICATION_CREDENTIALS"
 
-# If you modify these scopes, delete your previously saved credentials
+# If you modify these scopes, delete your previously-saved credentials
 DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 
 
@@ -23,8 +23,6 @@ class MissingCredentialsException(DriveException):
 def get_credentials(path: Optional[str] = None):
     """
     Retrieve the user's Google Cloud credentials.
-    :param path:
-    :return:
     """
 
     if path is None:
@@ -38,8 +36,4 @@ def get_credentials(path: Optional[str] = None):
 
 
 def authorize(credentials):
-    """
-    :param credentials:
-    :return:
-    """
     return credentials.authorize(httplib2.Http())

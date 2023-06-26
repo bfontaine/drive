@@ -32,6 +32,7 @@ def handle_progressless_iter(error, progressless_iters, *, retries_count=5):
         raise error
 
     sleep_time = random.random() * (2 ** progressless_iters)
+    # TODO: use a logger
     print('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
           % (str(error), sleep_time, progressless_iters))
     time.sleep(sleep_time)
@@ -89,9 +90,7 @@ def _serialize_query_value(value):
 
 
 class Client:
-    """
-    Google Drive client
-    """
+    """Google Drive client"""
 
     def __init__(self, credentials_path: Optional[str] = None, *, download_retries_count=5):
         credentials = get_credentials(credentials_path)
