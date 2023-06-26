@@ -1,7 +1,7 @@
 import time
 from typing import Iterable, Optional
 
-from googleapiclient import discovery
+from googleapiclient import discovery  # type: ignore
 
 from .auth import authorize_credentials
 
