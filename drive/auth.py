@@ -40,3 +40,8 @@ def get_credentials(path: Optional[str] = None):
 
 def authorize(credentials):
     return credentials.authorize(httplib2.Http())
+
+
+def authorize_credentials(credentials_path: Optional[str] = None):
+    """Equivalent of authorize(get_credentials(credentials_path))."""
+    return authorize(get_credentials(credentials_path))

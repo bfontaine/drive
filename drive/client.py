@@ -14,7 +14,7 @@ from googleapiclient.errors import HttpError  # type: ignore
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload  # type: ignore
 
 from drive import mimetypes
-from drive.auth import authorize, get_credentials
+from drive.auth import authorize_credentials
 from drive.exceptions import FileNotFoundException
 from drive.files import File, guess_original_mime_type
 
@@ -93,8 +93,7 @@ class Client:
     """Google Drive client"""
 
     def __init__(self, credentials_path: Optional[str] = None, *, download_retries_count=5):
-        credentials = get_credentials(credentials_path)
-        http = authorize(credentials)
+        http = authorize_credentials(credentials_path)
         self.service = discovery.build('drive', 'v3', http=http)
         self.download_retries_count = download_retries_count
 
