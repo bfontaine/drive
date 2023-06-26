@@ -26,7 +26,10 @@ def get_credentials(path: Optional[str] = None):
     """
 
     if path is None:
-        path = environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        if ENV_CLIENT_SECRET_PATH not in environ:
+            raise MissingCredentialsException()
+
+        path = environ[ENV_CLIENT_SECRET_PATH]
 
     path = os.path.expanduser(path)
     creds = ServiceAccountCredentials.from_json_keyfile_name(path, scopes=[DRIVE_SCOPE])
