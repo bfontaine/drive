@@ -9,7 +9,7 @@ __all__ = ['SheetClient']
 
 
 class SheetClient:
-    """Experimental Google Sheets client."""
+    """Google Sheets client."""
 
     def __init__(self, credentials_path: Optional[str] = None):
         http = authorize_credentials(credentials_path)
@@ -23,9 +23,12 @@ class SheetClient:
         return resp["values"]
 
     def iter_sheet_lines(self, sheet_id: str, sheet_tab: str, column_start: str, column_end: str,
-                         *, batch_size=400, sleep=0.5) \
+                         *,
+                         offset=0,
+                         batch_size=400,
+                         sleep=0.5) \
             -> Iterable[list]:
-        offset = 1  # lines start at 1
+        offset += 1  # lines start at 1
         while True:
             cell_range = f"{column_start}{offset}:{column_end}{offset + batch_size}"
             lines = self.get_sheet_range(sheet_id, sheet_tab, cell_range)
