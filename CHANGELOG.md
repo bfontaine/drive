@@ -1,5 +1,9 @@
 # Drive Changelog
 
+## 0.4.3 (2023/06/27)
+
+* Add an optional offset in `SheetClient.iter_sheet_lines`
+
 ## 0.4.2 (2023/06/26)
 
 * Fix `get_credentials` to respect `ENV_CLIENT_SECRET_PATH`
