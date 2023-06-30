@@ -3,7 +3,8 @@
 ## Unreleased
 
 * Rename parameter `sleep` of `SheetClient.iter_sheet_lines` as `sleep_for` (keep `sleep` as an alias)
-* Add auto-retry on 500/503 errors when querying a spreadsheet. 
+* Add auto-retry on 500/503 errors when querying a spreadsheet.
+* `SheetClient`: add docstrings
 
 ## 0.4.3 (2023/06/27)
 

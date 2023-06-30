@@ -36,6 +36,15 @@ class SheetClient:
 
     def get_sheet_range(self, sheet_id: str, sheet_tab: str, cell_range: str,
                         *, max_retries=2):
+        """
+        Get a range of cells from a spreadsheet.
+
+        :param sheet_id:
+        :param sheet_tab:
+        :param cell_range: Range, like A1:B3 to get columns A-B of lines 1-3.
+        :param max_retries: Max retries on 5XX errors
+        :return:
+        """
         req = self.service.values().get(spreadsheetId=sheet_id, range=f"{sheet_tab}!{cell_range}")
         # Note this often raises errors 500 or 503
         resp = _auto_retry(req.execute, max_retries=max_retries)
@@ -48,6 +57,20 @@ class SheetClient:
                          sleep_for=0.5,
                          sleep: Optional[float] = None) \
             -> Iterable[list]:
+        """
+        Iterate over lines of a spreadsheet: fetch them in batches and yield one at a time.
+
+        :param sheet_id: spreadsheet ID
+        :param sheet_tab: tab name
+        :param column_start: first column (example: "A")
+        :param column_end: last column (example: "Z")
+        :param offset: start reading at this offset
+        :param batch_size: how many lines to fetch at a time.
+        :param sleep_for: sleep this amount of time between batch calls.
+        :param sleep: deprecated alias for sleep_for.
+        :return:
+        """
+
         if sleep is not None:
             sleep_for = sleep
 
