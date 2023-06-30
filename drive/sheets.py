@@ -1,12 +1,12 @@
 import time
-from typing import Iterable, Optional, Callable, TypeVar
+from typing import Iterable, Optional, Callable, TypeVar, Dict, List, Any
 
 from googleapiclient import discovery  # type: ignore
 from googleapiclient.errors import HttpError
 
 from .auth import authorize_credentials
 
-__all__ = ['SheetClient']
+__all__ = ['SheetClient', 'sheet_lines_as_dicts']
 
 T = TypeVar('T')
 
@@ -86,3 +86,75 @@ class SheetClient:
                 # Don't hammer the API
                 # https://developers.google.com/sheets/api/reference/limits
                 time.sleep(sleep_for)
+
+    def iter_sheet_lines_as_dicts(self, sheet_id: str, sheet_tab: str,
+                                  column_start: str, column_end: str,
+                                  *,
+                                  fieldnames: Optional[Iterable[Any]] = None,
+                                  restkey=None,
+                                  restval=None,
+                                  **kwargs) -> Iterable[dict]:
+        """
+        Equivalent of `sheet_lines_as_dicts(client.iter_sheet_lines(...))`.
+        All trailing keyword arguments are passed to `iter_sheet_lines`.
+        """
+        return sheet_lines_as_dicts(
+            self.iter_sheet_lines(
+                sheet_id=sheet_id,
+                sheet_tab=sheet_tab,
+                column_start=column_start,
+                column_end=column_end,
+                **kwargs,
+            ),
+            fieldnames=fieldnames,
+            restkey=restkey,
+            restval=restval,
+        )
+
+
+def sheet_lines_as_dicts(lines: Iterable[List[Any]],
+                         fieldnames: Optional[Iterable[Any]] = None,
+                         *,
+                         restkey=None,
+                         restval=None) -> Iterable[dict]:
+    """
+    Transform spreadsheet lines into dictionaries like `csv.DictReader`. Aside from the first one, all the arguments
+    match `csv.DictReader`’s API.
+
+    See https://docs.python.org/3/library/csv.html#csv.DictReader.
+
+    :param lines: spreadsheet lines.
+    :param fieldnames: field names to use. If omitted, the first line is used as a header.
+    :param restkey:
+    :param restval:
+    :return:
+    """
+    # cell index -> header key
+    cell_index_mapping: Dict[int, Any] = {}
+    empty_line = {}
+
+    first = True
+    if fieldnames is not None:
+        first = False
+        for i, field_name in enumerate(fieldnames):
+            cell_index_mapping[i] = field_name
+        empty_line = {field: restval for field in cell_index_mapping.values()}
+
+    for line in lines:
+        if first:
+            for i, value in enumerate(line):
+                cell_index_mapping[i] = value
+            empty_line = {field: restval for field in cell_index_mapping.values()}
+            first = False
+            continue
+
+        m = dict(empty_line)
+
+        for i, value in enumerate(line):
+            if i in cell_index_mapping:
+                m[cell_index_mapping[i]] = value
+            else:
+                m.setdefault(restkey, [])
+                m[restkey].append(value)
+
+        yield m
