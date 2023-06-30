@@ -1,6 +1,6 @@
 # Drive Changelog
 
-## Unreleased
+## 0.4.4 (2023/06/30)
 
 * Rename parameter `sleep` of `SheetClient.iter_sheet_lines` as `sleep_for` (keep `sleep` as an alias)
 * Add auto-retry on 500/503 errors when querying a spreadsheet.
