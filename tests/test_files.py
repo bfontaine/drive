@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 import io
 
+import pytest
+
 from drive.files import File, guess_original_mime_type
 from drive import mimetypes
 
@@ -30,10 +32,26 @@ def test_exists():
     assert File({"id": "xx"}).exists() is None
 
 
-def test_guess_mime_type_preserve_reader_position():
-    r = io.BytesIO()
-    r.write(b"foobar")
-    offset = 4
-    r.seek(offset)
-    guess_original_mime_type(r)
-    assert r.tell() == offset
+try:
+    import magic
+except ImportError:
+    import warnings
+
+    warnings.warn("Libmagic is not installed; cannot properly test guess_original_mime_type")
+
+
+    def test_guess_mime_type_raise():
+        r = io.BytesIO()
+        r.write(b"foobar")
+        r.seek(0)
+        with pytest.raises(RuntimeError):
+            guess_original_mime_type(r)
+
+else:
+    def test_guess_mime_type_preserve_reader_position():
+        r = io.BytesIO()
+        r.write(b"foobar")
+        offset = 4
+        r.seek(offset)
+        guess_original_mime_type(r)
+        assert r.tell() == offset
