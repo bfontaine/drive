@@ -1,5 +1,10 @@
 # Drive Changelog
 
+## Unreleased
+
+* Rename parameter `sleep` of `SheetClient.iter_sheet_lines` as `sleep_for` (keep `sleep` as an alias)
+* 
+
 ## 0.4.3 (2023/06/27)
 
 * Add an optional offset in `SheetClient.iter_sheet_lines`

@@ -26,8 +26,12 @@ class SheetClient:
                          *,
                          offset=0,
                          batch_size=400,
-                         sleep=0.5) \
+                         sleep_for=0.5,
+                         sleep: Optional[float] = None) \
             -> Iterable[list]:
+        if sleep is not None:
+            sleep_for = sleep
+
         offset += 1  # lines start at 1
         while True:
             cell_range = f"{column_start}{offset}:{column_end}{offset + batch_size}"
@@ -36,7 +40,7 @@ class SheetClient:
             if len(lines) < batch_size:
                 break
             offset += batch_size
-            if sleep > 0:
+            if sleep_for > 0:
                 # Don't hammer the API
                 # https://developers.google.com/sheets/api/reference/limits
-                time.sleep(sleep)
+                time.sleep(sleep_for)
