@@ -1,11 +1,29 @@
 import time
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable, TypeVar
 
 from googleapiclient import discovery  # type: ignore
+from googleapiclient.errors import HttpError
 
 from .auth import authorize_credentials
 
 __all__ = ['SheetClient']
+
+T = TypeVar('T')
+
+
+def _auto_retry(fn: Callable[[], T], *,
+                max_retries=2,
+                sleep_for=4) -> T:
+    while True:
+        try:
+            return fn()
+        except HttpError as e:
+            if e.status_code in {500, 503} and max_retries > 0:
+                max_retries -= 1
+                time.sleep(sleep_for)
+                continue
+
+            raise
 
 
 class SheetClient:
@@ -16,10 +34,11 @@ class SheetClient:
         service = discovery.build('sheets', 'v4', http=http)
         self.service = service.spreadsheets()
 
-    def get_sheet_range(self, sheet_id: str, sheet_tab: str, cell_range: str):
+    def get_sheet_range(self, sheet_id: str, sheet_tab: str, cell_range: str,
+                        *, max_retries=2):
         req = self.service.values().get(spreadsheetId=sheet_id, range=f"{sheet_tab}!{cell_range}")
         # Note this often raises errors 500 or 503
-        resp = req.execute()
+        resp = _auto_retry(req.execute, max_retries=max_retries)
         return resp["values"]
 
     def iter_sheet_lines(self, sheet_id: str, sheet_tab: str, column_start: str, column_end: str,
