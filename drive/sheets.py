@@ -2,7 +2,7 @@ import time
 from typing import Iterable, Optional, Callable, TypeVar, Dict, List, Any
 
 from googleapiclient import discovery  # type: ignore
-from googleapiclient.errors import HttpError
+from googleapiclient.errors import HttpError  # type: ignore
 
 from .auth import authorize_credentials
 
