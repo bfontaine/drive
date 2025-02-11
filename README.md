@@ -16,6 +16,8 @@ On Linux, if you do have `libmagic` but Python can’t see it, see this [StackOv
 
 [so]: https://stackoverflow.com/q/7880454/735926
 
+Requirement: Python 3.9 or higher.
+
 ## Usage
 
 The API exposes a client as `drive.client.Client` that manipulates instances of
@@ -134,6 +136,6 @@ cl.download_file("11AASomeFileId", "localfile.png", "image/png")
 
 ## License
 
-Copyright © 2016-2023 Baptiste Fontaine
+Copyright © 2016-2025 Baptiste Fontaine
 
 Distributed under the MIT License.
