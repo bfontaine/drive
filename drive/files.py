@@ -176,7 +176,7 @@ class File:
         if not self._client or not self.is_directory:
             return None
 
-        return cast(File, self._client.get_file(name, self.id))
+        return cast(File, self._client.get_file_by_name(name, self.id))
 
     def parents(self):
         """
