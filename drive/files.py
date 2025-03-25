@@ -110,18 +110,18 @@ class File:
         self._update(m)
         return None
 
-    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> None:
+    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> None | Literal[False]:
         """
         Move the file under a new parent.
         :param new_parent:
         :param new_name:
         :return:
         """
+        if not self._client:
+            return False
+
         if new_parent.is_directory is False:
             raise NotADirectoryError(new_parent.name)
-
-        if not self._client:
-            raise DriveException('This File object is not attached to a drive Client')
 
         parents_ids = [new_parent.id]
         kw: dict[str, Any] = {
