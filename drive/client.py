@@ -5,13 +5,13 @@ import os.path
 import random
 import sys
 import time
-from typing import Optional, List, Any, Tuple, Dict, cast, Iterable, Union
+from typing import BinaryIO, Optional, List, Any, Tuple, Dict, cast, Iterable, Union
 
 import httplib2
 import openpyxl
 from apiclient import discovery  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload  # type: ignore
+from googleapiclient.http import HttpRequest, MediaUpload, MediaIoBaseDownload, MediaIoBaseUpload  # type: ignore
 
 from drive import mimetypes
 from drive.auth import authorize_credentials
@@ -26,7 +26,7 @@ CHUNKSIZE = 2 * 1024 * 1024
 QueryClause = Tuple[str, str, Any]
 
 
-def handle_progressless_iter(error, progressless_iters, *, retries_count=5):
+def handle_progressless_iter(error: Exception, progressless_iters: int, *, retries_count: int = 5):
     if progressless_iters > retries_count:
         print('Failed to make progress for too many consecutive iterations.')
         raise error
@@ -38,7 +38,7 @@ def handle_progressless_iter(error, progressless_iters, *, retries_count=5):
     time.sleep(sleep_time)
 
 
-def print_with_carriage_return(s):
+def print_with_carriage_return(s: str):
     """
     Internal utility to print a one-line string prefixed with a carriage return (``\\r``).
     :param s: string to print
@@ -48,7 +48,7 @@ def print_with_carriage_return(s):
     sys.stdout.flush()
 
 
-def _make_querystring(clauses: Iterable[QueryClause], join="and"):
+def _make_querystring(clauses: Iterable[QueryClause], join: str = "and"):
     """
     Make an "and" query string by combining all clauses.
     Each clause is a 3-elements tuple of ``(field, operator, value)``.
@@ -62,7 +62,7 @@ def _make_querystring(clauses: Iterable[QueryClause], join="and"):
     return (" %s " % join).join(parts)
 
 
-def _make_query_clause(field: str, op: str, value, negation=False) -> str:
+def _make_query_clause(field: str, op: str, value: Any, negation: bool = False) -> str:
     serialized_value = _serialize_query_value(value)
     if op == "in":
         p = "%s %s %s" % (serialized_value, op, field)
@@ -79,7 +79,7 @@ def _resolve_parent_id(parent: Union[File, str]):
     return parent
 
 
-def _serialize_query_value(value):
+def _serialize_query_value(value: Any):
     """
     Serialize a query value.
     """
@@ -92,7 +92,7 @@ def _serialize_query_value(value):
 class Client:
     """Google Drive client"""
 
-    def __init__(self, credentials_path: Optional[str] = None, *, download_retries_count=5):
+    def __init__(self, credentials_path: Optional[str] = None, *, download_retries_count: int = 5):
         http = authorize_credentials(credentials_path)
         self.service = discovery.build('drive', 'v3', http=http)
         self.download_retries_count = download_retries_count
@@ -138,7 +138,7 @@ class Client:
         """
         return self._files.delete(fileId=file_id).execute()
 
-    def get_file_metadata(self, file_id, raise_if_not_found=True, **kw):
+    def get_file_metadata(self, file_id: str, raise_if_not_found: bool = True, **kw):
         try:
             return self._files.get(fileId=file_id, **kw).execute()
         except HttpError:
@@ -146,7 +146,7 @@ class Client:
                 return None
             raise
 
-    def get_file(self, file_id: str, raise_if_not_found=True) -> Optional[File]:
+    def get_file(self, file_id: str, raise_if_not_found: bool = True) -> Optional[File]:
         """
         Get a file by its ID.
 
@@ -206,7 +206,7 @@ class Client:
 
     def get_shared_file(self, name: str,
                         is_directory: Optional[bool] = None,
-                        raise_if_not_found=True) -> Optional[File]:
+                        raise_if_not_found: bool = True) -> Optional[File]:
         """
         Retrieve a shared file.
         If ``is_directory`` is a boolean, it’s used to filter files that are (or not) directories. By default, the first
@@ -243,7 +243,7 @@ class Client:
                    name_contains: Optional[str] = None,
                    mimetype: Optional[str] = None,
                    parents_in: Optional[str] = None,
-                   n=100):
+                   n: int = 100):
         """
         Return the names and IDs for up to N files.
         """
@@ -264,11 +264,11 @@ class Client:
         return self._execute_file_request(self._files.list(q=q, pageSize=n))
 
     def update_file(self, file_id: str,
-                    remove_parents_ids=None,
-                    add_parents_ids=None,
+                    remove_parents_ids: Optional[Iterable[str]] = None,
+                    add_parents_ids: Optional[Iterable[str]] = None,
                     name: Optional[str] = None,
-                    media=None,
-                    force=False):
+                    media: Optional[MediaUpload] = None,
+                    force: bool = False):
         """
         Update a file.
 
@@ -314,7 +314,7 @@ class Client:
         """
         return self.update_file(file_id, name=name)
 
-    def download(self, file_id: str, writer, mime_type: Optional[str] = None) -> None:
+    def download(self, file_id: str, writer: BinaryIO, mime_type: Optional[str] = None) -> None:
         """
         Download a file and write its content using the binary writer ``writer``. See also ``download_file``.
 
@@ -351,7 +351,7 @@ class Client:
         with open(path, "wb") as f:
             self.download(file_id, f, mime_type=mime_type)
 
-    def download_excel_workbook(self, file_id: str, read_only=False):
+    def download_excel_workbook(self, file_id: str, read_only: bool = False):
         """
         Download a Google Spreadsheet as an openpyxl workbook.
 
@@ -365,11 +365,11 @@ class Client:
         return openpyxl.load_workbook(buff, read_only=read_only)
 
     def upload(self, parent_id: Union[str, File], name: str,
-               reader,
+               reader: BinaryIO,
                mime_type: Optional[str] = None,
                original_mime_type: Optional[str] = None,
-               update_existing=False,
-               resumable=False):
+               update_existing: bool = False,
+               resumable: bool = False):
         """
         :param parent_id:
         :param name: remote filename
@@ -410,7 +410,7 @@ class Client:
                     name: Optional[str] = None,
                     mime_type: Optional[str] = None,
                     original_mime_type: Optional[str] = None,
-                    update_existing=False):
+                    update_existing: bool = False):
         """
         :param parent_id:
         :param path: local path
@@ -433,8 +433,8 @@ class Client:
                               parent: Union[str, File],
                               name: str,
                               workbook: openpyxl.Workbook,
-                              as_spreadsheet=True,
-                              update_existing=False):
+                              as_spreadsheet: bool = True,
+                              update_existing: bool = False):
         """
         Upload an openpyxl (Excel) workbook and convert it to a Google Spreadsheet, unless ``as_spreadsheet`` is false.
 
@@ -466,7 +466,7 @@ class Client:
 
     # Private API
 
-    def _execute_file_request(self, req):
+    def _execute_file_request(self, req: HttpRequest):
         if not req.resumable:
             resp = req.execute()
             if "files" in resp:

@@ -2,12 +2,13 @@
 
 import io
 import json
-from typing import Optional, Union, cast, Dict, Any, BinaryIO
+from typing import Optional, Union, cast, Dict, Any, BinaryIO, Iterable
 
 from openpyxl.workbook import Workbook
 
 import drive
 from drive import mimetypes
+from drive.exceptions import DriveException
 
 
 class File:
@@ -15,7 +16,7 @@ class File:
     A file on Google Drive. This might be a directory as well.
     """
 
-    def __init__(self, attrs, client: Optional["drive.Client"] = None):
+    def __init__(self, attrs: Union["File", dict[Any, Any]], client: Optional["drive.Client"] = None):
         """
 
         :param attrs:
@@ -27,15 +28,16 @@ class File:
                 setattr(self, attr, getattr(attrs, attr))
             return
 
-        self.id = attrs["id"]
-        self._name = attrs.get("name")
-        self.kind = attrs.get("kind")
-        self.mimetype = attrs.get("mimeType")
-        self.parents_ids = attrs.get("parents")
+        self.id: str = attrs["id"]
+        self._name: Optional[str] = attrs.get("name")
+        self.kind: Optional[str] = attrs.get("kind")
+        self.mimetype: Optional[str] = attrs.get("mimeType")
+        self.parents_ids: Optional[Iterable[str]] = attrs.get("parents")
 
-        self.size = attrs.get("size")
-        if self.size:
-            self.size = int(self.size)
+        self.size: Optional[int] = None
+        size = attrs.get("size")
+        if size is not None:
+            self.size = int(size)
 
         self._client = client
 
@@ -95,7 +97,7 @@ class File:
         # https://developers.google.com/drive/v3/reference/files/delete
         return self._client.remove_file(self.id) == ""
 
-    def rename(self, new_name):
+    def rename(self, new_name: str):
         """
         Rename the file.
         :param new_name:
@@ -106,7 +108,7 @@ class File:
         m = self._client.update_file(self.id, name=new_name)
         self._update(m)
 
-    def move_in(self, new_parent, new_name=None):
+    def move_in(self, new_parent: "File", new_name: Optional[str] = None):
         """
         Move the file under a new parent.
         :param new_parent:
@@ -116,8 +118,11 @@ class File:
         if new_parent.is_directory is False:
             raise NotADirectoryError(new_parent.name)
 
+        if not self._client:
+            raise DriveException('This File object is not attached to a drive Client')
+
         parents_ids = [new_parent.id]
-        kw = {
+        kw: dict[str, Any] = {
             "add_parents_ids": parents_ids,
             "remove_parents_ids": [p.id for p in self.parents()],
         }
@@ -138,7 +143,7 @@ class File:
 
         return self._client.list_files(parents_in=self.id)
 
-    def create_folder(self, name):
+    def create_folder(self, name: str):
         """
         Create a folder under a directory. This has no effect if the file is not a directory.
         :param name:
@@ -149,7 +154,7 @@ class File:
 
         return self._client.create_folder(name, self.id)
 
-    def get_or_create_folder(self, name):
+    def get_or_create_folder(self, name: str):
         """
 
         :param name:
@@ -166,7 +171,7 @@ class File:
 
         return self._client.grant_file_permissions(self.id, role, type_)
 
-    def get_child(self, name):
+    def get_child(self, name: str):
         """
         Get a child file. Return None if the current file is not a directory.
 
@@ -214,7 +219,7 @@ class File:
             return None
         return ps[0]
 
-    def download(self, writer, mime_type=None):
+    def download(self, writer: BinaryIO, mime_type: Optional[str] = None):
         """
 
         :param writer:
@@ -225,7 +230,7 @@ class File:
             return False
         return self._client.download(self.id, writer, mime_type=mime_type)
 
-    def download_file(self, path, mime_type=None):
+    def download_file(self, path: str, mime_type: Optional[str] = None):
         """
 
         :param path:
@@ -236,7 +241,7 @@ class File:
             return None
         return self._client.download_file(self.id, path, mime_type=mime_type)
 
-    def download_workbook(self, read_only=False) -> Optional[Workbook]:
+    def download_workbook(self, read_only: bool = False) -> Optional[Workbook]:
         """
 
         :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
@@ -246,7 +251,7 @@ class File:
             return None
         return self._client.download_excel_workbook(self.id, read_only=read_only)
 
-    def get_bytes(self, mime_type=None):
+    def get_bytes(self, mime_type: Optional[str] = None):
         """
         Return a ``io.BytesIO`` object holding the content of the file. This can be used as a binary reader.
         :param mime_type:

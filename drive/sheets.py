@@ -12,8 +12,8 @@ T = TypeVar('T')
 
 
 def _auto_retry(fn: Callable[[], T], *,
-                max_retries=2,
-                sleep_for=4) -> T:
+                max_retries: int = 2,
+                sleep_for: int = 4) -> T:
     while True:
         try:
             return fn()
@@ -35,7 +35,7 @@ class SheetClient:
         self.service = service.spreadsheets()
 
     def get_sheet_range(self, sheet_id: str, sheet_tab: str, cell_range: str,
-                        *, max_retries=2):
+                        *, max_retries: int = 2):
         """
         Get a range of cells from a spreadsheet.
 
@@ -52,9 +52,9 @@ class SheetClient:
 
     def iter_sheet_lines(self, sheet_id: str, sheet_tab: str, column_start: str, column_end: str,
                          *,
-                         offset=0,
-                         batch_size=400,
-                         sleep_for=0.5,
+                         offset: int = 0,
+                         batch_size: int = 400,
+                         sleep_for: float = 0.5,
                          sleep: Optional[float] = None) \
             -> Iterable[list]:
         """
@@ -91,8 +91,8 @@ class SheetClient:
                                   column_start: str, column_end: str,
                                   *,
                                   fieldnames: Optional[Iterable[Any]] = None,
-                                  restkey=None,
-                                  restval=None,
+                                  restkey: Any = None,
+                                  restval: Any = None,
                                   **kwargs) -> Iterable[dict]:
         """
         Equivalent of `sheet_lines_as_dicts(client.iter_sheet_lines(...))`.
@@ -115,8 +115,8 @@ class SheetClient:
 def sheet_lines_as_dicts(lines: Iterable[List[Any]],
                          fieldnames: Optional[Iterable[Any]] = None,
                          *,
-                         restkey=None,
-                         restval=None) -> Iterable[dict]:
+                         restkey: Any = None,
+                         restval: Any = None) -> Iterable[dict]:
     """
     Transform spreadsheet lines into dictionaries like `csv.DictReader`. Aside from the first one, all the arguments
     match `csv.DictReader`’s API.

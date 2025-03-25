@@ -38,7 +38,7 @@ def get_credentials(path: Optional[str] = None):
     return creds
 
 
-def authorize(credentials):
+def authorize(credentials: ServiceAccountCredentials):
     return credentials.authorize(httplib2.Http())
 
 
