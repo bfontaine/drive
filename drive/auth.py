@@ -20,7 +20,7 @@ class MissingCredentialsException(DriveException):
         super().__init__("Missing credentials! Please set %s" % ENV_CLIENT_SECRET_PATH)
 
 
-def get_credentials(path: Optional[str] = None):
+def get_credentials(path: Optional[str] = None) -> ServiceAccountCredentials:
     """
     Retrieve the user's Google Cloud credentials.
     """
@@ -38,10 +38,10 @@ def get_credentials(path: Optional[str] = None):
     return creds
 
 
-def authorize(credentials: ServiceAccountCredentials):
+def authorize(credentials: ServiceAccountCredentials) -> httplib2.Http:
     return credentials.authorize(httplib2.Http())
 
 
-def authorize_credentials(credentials_path: Optional[str] = None):
+def authorize_credentials(credentials_path: Optional[str] = None) -> httplib2.Http:
     """Equivalent of authorize(get_credentials(credentials_path))."""
     return authorize(get_credentials(credentials_path))

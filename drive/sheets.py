@@ -29,7 +29,7 @@ def _auto_retry(fn: Callable[[], T], *,
 class SheetClient:
     """Google Sheets client."""
 
-    def __init__(self, credentials_path: Optional[str] = None):
+    def __init__(self, credentials_path: Optional[str] = None) -> None:
         http = authorize_credentials(credentials_path)
         service = discovery.build('sheets', 'v4', http=http)
         self.service = service.spreadsheets()
