@@ -8,7 +8,6 @@ from openpyxl.workbook import Workbook
 
 import drive
 from drive import mimetypes
-from drive.exceptions import DriveException
 
 
 class File:
@@ -134,6 +133,7 @@ class File:
         m = self._client.update_file(self.id, **kw)
         self._update(m)
         self.parents_ids = parents_ids
+        return None
 
     def list(self) -> list["File"]:
         """
