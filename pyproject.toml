@@ -31,7 +31,7 @@ python-magic-bin = {version = "^0.4.14", platform = "windows"}
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
 pytest-cov = "^5.0"
-mypy = "^0"
+mypy = "^1.15"
 types-openpyxl = "*"
 types-httplib2 = "*"
 
