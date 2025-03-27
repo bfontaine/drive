@@ -1,5 +1,12 @@
 # Drive Changelog
 
+## 0.4.5 (2025/03/27)
+
+All the work in this release has been contributed by @Mr0grog (#13).
+
+* Ensure `File.get_child()` works with a name, not an ID
+* Add type annotations everywhere
+
 ## 0.4.4 (2023/06/30)
 
 * Rename parameter `sleep` of `SheetClient.iter_sheet_lines` as `sleep_for` (keep `sleep` as an alias)
