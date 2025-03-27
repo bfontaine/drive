@@ -272,7 +272,7 @@ class File:
         """
         return json.load(self.get_bytes())
 
-    def jsons(self) -> Generator[Any]:
+    def jsons(self) -> Generator[Any, None, None]:
         """
         Convenient method to download a file as a newline-delimited list of JSON objects. This returns a generator.
         :return:
