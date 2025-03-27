@@ -7,10 +7,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1.9
+        uses: JRubics/poetry-publish@v2.0
         with:
           python_version: "3.9"
           pypi_token: ${{ secrets.PYPI_TOKEN }}
-          ignore_dev_requirements: yes
+          poetry_install_options: "--without dev"
