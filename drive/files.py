@@ -96,7 +96,7 @@ class File:
         # https://developers.google.com/drive/v3/reference/files/delete
         return self._client.remove_file(self.id) == ""
 
-    def rename(self, new_name: str) -> None | Literal[False]:
+    def rename(self, new_name: str) -> Optional[Literal[False]]:
         """
         Rename the file.
         :param new_name:
@@ -109,7 +109,7 @@ class File:
         self._update(m)
         return None
 
-    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> None | Literal[False]:
+    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> Optional[Literal[False]]:
         """
         Move the file under a new parent.
         :param new_parent:

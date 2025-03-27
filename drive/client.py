@@ -467,7 +467,7 @@ class Client:
 
     # Private API
 
-    def _execute_file_request(self, req: HttpRequest) -> List[File] | File | None:
+    def _execute_file_request(self, req: HttpRequest) -> Union[List[File], File, None]:
         if not req.resumable:
             resp = req.execute()
             if "files" in resp:
