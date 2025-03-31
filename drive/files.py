@@ -31,14 +31,22 @@ class File:
         :param client:
         """
         # If one calls File(File(...)) make the outer file copy the attributes of the inner one
-        # TODO: deprecate this usage
         if isinstance(attrs, File):
-            for attr in ("id", "_name", "kind", "mimetype", "size", "parents", "_client"):
-                setattr(self, attr, getattr(attrs, attr))
-            return
+            file = attrs
+
+            if client is None:
+                # noinspection PyUnresolvedReferences,PyProtectedMember
+                client = file._client
+
+            attrs = {
+                attr: getattr(file, attr)
+                for attr in ("id", "kind", "mimetype", "size", "parents")
+            }
+            attrs["name"] = file._name
 
         self.id: str = attrs["id"]
         self._name: Optional[str] = attrs.get("name")
+        self._fetched_name = False
         self.kind: Optional[str] = attrs.get("kind")
         self.mimetype: Optional[str] = attrs.get("mimeType")
         self.parents_ids: Optional[Iterable[str]] = attrs.get("parents")
@@ -48,7 +56,7 @@ class File:
         if size is not None:
             self.size = int(size)
 
-        self._client = client
+        self._client: Optional["drive.Client"] = client
 
     @property
     def client(self):
@@ -56,11 +64,13 @@ class File:
         return self._client
 
     @property
-    def name(self) -> str:
-        if self._name is None:
+    def name(self) -> Union[str, None]:
+        if self._name is None and not self._fetched_name:
             me = self.client.get_file_metadata(self.id, raise_if_not_found=False)
             if me:
-                self._name = me["name"]
+                self._name = cast(str, me["name"])
+
+            self._fetched_name = True
 
         return self._name
 
@@ -275,7 +285,6 @@ class File:
     def to_dict(self) -> dict[str, Any]:
         """
         Return the file’s metadata as a dict. Mandatory keys: ``"id"``, ``"name"``. Optional ones: ``"parents"``.
-        :return:
         """
         d: dict[str, Any] = {
             # Add other fields as needed
@@ -288,11 +297,11 @@ class File:
         return d
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or super().__str__()
 
     def __repr__(self) -> str:
         klass = self.__class__
-        dir_info = " (directory)" if self.is_directory else ""
+        dir_info = " (directory)" if self._client and self.is_directory else ""
         return "<%s.%s name=\"%s\"%s>" % (
             klass.__module__, klass.__name__, self.__str__(), dir_info)
 
