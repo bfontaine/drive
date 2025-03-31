@@ -26,12 +26,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           poetry install
-      - name: Lint with Mypy
+      - name: Test
         run: |
-          poetry run mypy *.py drive tests
-      - name: Run Tests
-        run: |
-          poetry run pytest --cov=drive
+          ./ci.sh
       - name: Test build
         run: |
           poetry build
