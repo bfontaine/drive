@@ -35,6 +35,10 @@ def test_human_type(attrs, expected):
 
 def test_exists():
     class FakeClient(Client):
+        # noinspection PyMissingConstructor
+        def __init__(self, credentials_path=None, *, download_retries_count=5):
+            pass
+
         def get_file(self, file_id, *, raise_if_not_found=True):
             return File({"id": file_id}) if file_id == "yes" else None
 
