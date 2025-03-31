@@ -3,8 +3,8 @@ import io
 
 import pytest
 
+from drive import mimetypes, Client
 from drive.files import File, guess_original_mime_type
-from drive import mimetypes
 
 
 def test_name():
@@ -20,16 +20,31 @@ def test_is_directory():
     assert File({"id": "xx", "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER}).is_directory
 
 
-def test_human_type():
-    assert File({"id": "xx"}).human_type == "?"
-    assert File({"id": "xx", "name": "foo.json"}).human_type == "?"
-    assert File({"id": "xx", "name": "foo.jsons"}).human_type == "JSONS"
-    assert File({"id": "xx", "name": "foo.jsons", "mimeType": mimetypes.JSON}).human_type == "JSON"
-    assert File({"id": "xx", "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER}).human_type == "folder"
+@pytest.mark.parametrize("attrs, expected", [
+    ({"id": "xx"}, "?"),
+    ({"id": "xx", "name": "foo.json"}, "?"),
+    ({"id": "xx", "name": "foo.jsons"}, "JSONS"),
+    ({"id": "xx", "name": "foo.jsons", "mimeType": mimetypes.JSON}, "JSON"),
+    ({"id": "xx", "mimeType": mimetypes.GOOGLE_DRIVE_FOLDER}, "folder"),
+])
+def test_human_type(attrs, expected):
+    file = File(attrs)
+    setattr(file, "_fetched_name", True)
+    assert file.human_type == expected
 
 
 def test_exists():
-    assert File({"id": "xx"}).exists() is None
+    class FakeClient(Client):
+        def get_file(self, file_id, *, raise_if_not_found=True):
+            return File({"id": file_id}) if file_id == "yes" else None
+
+    client = FakeClient()
+
+    file1 = File({"id": "yes"}, client=client)
+    file2 = File({"id": "no"}, client=client)
+
+    assert file1.exists()
+    assert not file2.exists()
 
 
 try:
