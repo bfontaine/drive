@@ -2,12 +2,20 @@
 
 import io
 import json
-from typing import Generator, Literal, Optional, Union, cast, Dict, List, Any, BinaryIO, Iterable
+from typing import Optional, Union, cast, Dict, List, Any, BinaryIO, Iterable, Iterator
 
 from openpyxl.workbook import Workbook
 
 import drive
 from drive import mimetypes
+
+__all__ = ["File", "guess_original_mime_type"]
+
+HUMAN_TYPES = {
+    mimetypes.GOOGLE_DRIVE_FOLDER: "folder",
+    mimetypes.GOOGLE_SHEETS: "Google Spreadsheet",
+    mimetypes.JSON: "JSON",
+}
 
 
 class File:
@@ -17,11 +25,13 @@ class File:
 
     def __init__(self, attrs: Union["File", dict[Any, Any]], client: Optional["drive.Client"] = None) -> None:
         """
+        Create a file object.
 
         :param attrs:
         :param client:
         """
         # If one calls File(File(...)) make the outer file copy the attributes of the inner one
+        # TODO: deprecate this usage
         if isinstance(attrs, File):
             for attr in ("id", "_name", "kind", "mimetype", "size", "parents", "_client"):
                 setattr(self, attr, getattr(attrs, attr))
@@ -41,9 +51,14 @@ class File:
         self._client = client
 
     @property
-    def name(self) -> Optional[str]:
-        if self._name is None and self._client:
-            me = self._client.get_file_metadata(self.id, False)
+    def client(self):
+        assert self._client is not None, "This operation requires a Drive client"
+        return self._client
+
+    @property
+    def name(self) -> str:
+        if self._name is None:
+            me = self.client.get_file_metadata(self.id, False)
             if me:
                 self._name = me["name"]
 
@@ -51,6 +66,7 @@ class File:
 
     @property
     def is_directory(self) -> Optional[bool]:
+        """Test if this file is a directory. Return `None` if the metadata is not set."""
         if self.mimetype is None:
             return None
         return self.mimetype == mimetypes.GOOGLE_DRIVE_FOLDER
@@ -59,66 +75,47 @@ class File:
     def human_type(self) -> str:
         """
         Human-friendly file type.
-        :return:
         """
-        aliases = {
-            mimetypes.GOOGLE_DRIVE_FOLDER: "folder",
-            mimetypes.GOOGLE_SHEETS: "Google Spreadsheet",
-            mimetypes.JSON: "JSON",
-        }
-
-        if self.mimetype in aliases:
-            return aliases[self.mimetype]
+        if self.mimetype in HUMAN_TYPES:
+            return HUMAN_TYPES[self.mimetype]
 
         if self.name and self.name.lower().endswith(".jsons"):
             return "JSONS"
 
         return self.mimetype or "?"
 
-    def exists(self) -> Optional[bool]:
+    def exists(self) -> bool:
         """
         Test if the file exists.
         """
-        if not self._client:
-            return None
-
-        return bool(self._client.get_file(self.id, raise_if_not_found=False))
+        return bool(self.client.get_file(self.id, raise_if_not_found=False))
 
     def unlink(self) -> bool:
         """
         Remove the file. If it's a directory all its children are removed as well.
         :return: a boolean indicating success
         """
-        if not self._client:
-            return False
-
         # "If successful, this method returns an empty response body."
         # https://developers.google.com/drive/v3/reference/files/delete
-        return self._client.remove_file(self.id) == ""
+        return self.client.remove_file(self.id) == ""
 
-    def rename(self, new_name: str) -> Optional[Literal[False]]:
+    def rename(self, new_name: str) -> None:
         """
         Rename the file.
         :param new_name:
         :return:
         """
-        if not self._client:
-            return False
-
-        m = self._client.update_file(self.id, name=new_name)
+        m = self.client.update_file(self.id, name=new_name)
         self._update(m)
         return None
 
-    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> Optional[Literal[False]]:
+    def move_in(self, new_parent: "File", new_name: Optional[str] = None) -> None:
         """
         Move the file under a new parent.
         :param new_parent:
         :param new_name:
         :return:
         """
-        if not self._client:
-            return False
-
         if new_parent.is_directory is False:
             raise NotADirectoryError(new_parent.name)
 
@@ -130,7 +127,7 @@ class File:
         if new_name:
             kw["name"] = new_name
 
-        m = self._client.update_file(self.id, **kw)
+        m = self.client.update_file(self.id, **kw)
         self._update(m)
         self.parents_ids = parents_ids
         return None
@@ -140,38 +137,35 @@ class File:
         List a directory's content. This returns an empty list for simple files.
         :return:
         """
-        if not self._client or not self.is_directory:
+        if not self.is_directory:
             return []
 
-        return self._client.list_files(parents_in=self.id)
+        return self.client.list_files(parents_in=self.id)
 
-    def create_folder(self, name: str) -> "File | Literal[False]":
+    def create_folder(self, name: str) -> Optional["File"]:
         """
         Create a folder under a directory. This has no effect if the file is not a directory.
         :param name:
         :return:
         """
-        if not self._client or not self.is_directory:
-            return False
+        if not self.is_directory:
+            return None
 
-        return self._client.create_folder(name, self.id)
+        return self.client.create_folder(name, self.id)
 
-    def get_or_create_folder(self, name: str) -> "File | Literal[False]":
+    def get_or_create_folder(self, name: str) -> Optional["File"]:
         """
 
         :param name:
         :return:
         """
-        if not self._client or not self.is_directory:
-            return False
-
-        return self._client.get_or_create_folder(name, self.id)
-
-    def grant_permissions(self, role: str, type_: str) -> Optional[Dict[str, Any]]:
-        if not self._client:
+        if not self.is_directory:
             return None
 
-        return self._client.grant_file_permissions(self.id, role, type_)
+        return self.client.get_or_create_folder(name, self.id)
+
+    def grant_permissions(self, role: str, type_: str) -> Optional[Dict[str, Any]]:
+        return self.client.grant_file_permissions(self.id, role, type_)
 
     def get_child(self, name: str) -> Optional["File"]:
         """
@@ -180,10 +174,10 @@ class File:
         :param name:
         :return:
         """
-        if not self._client or not self.is_directory:
+        if not self.is_directory:
             return None
 
-        return self._client.get_file_by_name(name, self.id)
+        return self.client.get_file_by_name(name, self.id)
 
     def parents(self) -> List["File"]:
         """
@@ -192,22 +186,19 @@ class File:
         :return:
         """
         if self.parents_ids is None:
-            if not self._client:
-                return []
-
-            m = self._client.get_file_metadata(self.id, fields="parents")
+            m = self.client.get_file_metadata(self.id, fields="parents")
             if not m:
                 self.parents_ids = []
                 return []
 
             self.parents_ids = m["parents"]
 
-        parents = []
+        parents: List["File"] = []
         for pid in cast(Iterable[str], self.parents_ids):
             parents.append(File({
                 "id": pid,
                 "mimetype": mimetypes.GOOGLE_DRIVE_FOLDER,
-            }, client=self._client))
+            }, client=self.client))
 
         return parents
 
@@ -221,16 +212,14 @@ class File:
             return None
         return ps[0]
 
-    def download(self, writer: BinaryIO, mime_type: Optional[str] = None) -> Optional[Literal[False]]:
+    def download(self, writer: BinaryIO, mime_type: Optional[str] = None) -> None:
         """
 
         :param writer:
         :param mime_type:
         :return:
         """
-        if not self._client:
-            return False
-        self._client.download(self.id, writer, mime_type=mime_type)
+        self.client.download(self.id, writer, mime_type=mime_type)
         return None
 
     def download_file(self, path: str, mime_type: Optional[str] = None) -> None:
@@ -240,19 +229,15 @@ class File:
         :param mime_type:
         :return:
         """
-        if not self._client:
-            return None
-        return self._client.download_file(self.id, path, mime_type=mime_type)
+        return self.client.download_file(self.id, path, mime_type=mime_type)
 
-    def download_workbook(self, read_only: bool = False) -> Optional[Workbook]:
+    def download_workbook(self, read_only: bool = False) -> Workbook:
         """
 
         :param read_only: set this to ``True`` if you don't plan to save or edit the workbook.
         :return:
         """
-        if not self._client:
-            return None
-        return self._client.download_excel_workbook(self.id, read_only=read_only)
+        return self.client.download_excel_workbook(self.id, read_only=read_only)
 
     def get_bytes(self, mime_type: Optional[str] = None) -> io.BytesIO:
         """
@@ -267,28 +252,25 @@ class File:
 
     def json(self) -> Any:
         """
-        Convenient method to download a file as JSON.
+        Download the file as JSON.
         :return:
         """
         return json.load(self.get_bytes())
 
-    def jsons(self) -> Generator[Any, None, None]:
+    def jsons(self) -> Iterator[Any]:
         """
-        Convenient method to download a file as a newline-delimited list of JSON objects. This returns a generator.
+        Download the file as a newline-delimited list of JSON objects. This returns a generator.
         :return:
         """
-        line = b'1'
+        line = b'1'  # just for typing
         b = self.get_bytes()
         while line:
             line = b.readline()
             if line:  # skip empty lines
                 yield json.loads(line.decode("utf-8"))
 
-    def get_web_view_link(self) -> Optional[str]:
-        if not self._client:
-            return None
-
-        return self._client.get_web_view_link(self.id)
+    def get_web_view_link(self) -> str:
+        return self.client.get_web_view_link(self.id)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -306,7 +288,7 @@ class File:
         return d
 
     def __str__(self) -> str:
-        return self.name or ''
+        return self.name
 
     def __repr__(self) -> str:
         klass = self.__class__

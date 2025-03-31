@@ -1,5 +1,12 @@
 # Drive Changelog
 
+## Unreleased
+
+### Breaking Changes
+
+* `File` methods that make use of a Drive client now raise an error if the client is not set, instead of
+  returning `None` or `False`. This only affects `File` objects created by hand, not those returned by the client.
+
 ## 0.4.5 (2025/03/27)
 
 All the work in this release has been contributed by [@Mr0grog][m] ([#13][p13]).
@@ -8,6 +15,7 @@ All the work in this release has been contributed by [@Mr0grog][m] ([#13][p13]).
 * Add type annotations everywhere
 
 [m]: https://github.com/Mr0grog
+
 [p13]: https://github.com/bfontaine/drive/pull/13
 
 ## 0.4.4 (2023/06/30)
