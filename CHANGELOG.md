@@ -6,6 +6,14 @@
 
 * `File` methods that make use of a Drive client now raise an error if the client is not set, instead of
   returning `None` or `False`. This only affects `File` objects created by hand, not those returned by the client.
+* Arguments `is_directory` and `raise_if_not_found` must now be passed as keywords.
+    ```python
+    # This worked before
+    client.get_shared_file("...", True, True)
+
+    # Now only this syntax is valid
+    client.get_shared_file("...", is_directory=True, raise_if_not_found=True)
+    ```
 
 ## 0.4.5 (2025/03/27)
 

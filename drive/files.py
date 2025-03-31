@@ -58,7 +58,7 @@ class File:
     @property
     def name(self) -> str:
         if self._name is None:
-            me = self.client.get_file_metadata(self.id, False)
+            me = self.client.get_file_metadata(self.id, raise_if_not_found=False)
             if me:
                 self._name = me["name"]
 

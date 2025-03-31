@@ -5,7 +5,7 @@ import os.path
 import random
 import sys
 import time
-from typing import BinaryIO, Optional, List, Literal, Any, Tuple, Dict, cast, Iterable, Union, cast
+from typing import BinaryIO, Optional, List, Literal, Any, Tuple, Dict, Iterable, Union, cast
 
 import httplib2
 import openpyxl
@@ -138,7 +138,7 @@ class Client:
         """
         return self._files.delete(fileId=file_id).execute()
 
-    def get_file_metadata(self, file_id: str, raise_if_not_found: bool = True, **kw) -> Optional[dict[str, Any]]:
+    def get_file_metadata(self, file_id: str, *, raise_if_not_found: bool = True, **kw) -> Optional[dict[str, Any]]:
         try:
             return self._files.get(fileId=file_id, **kw).execute()
         except HttpError:
@@ -146,14 +146,14 @@ class Client:
                 return None
             raise
 
-    def get_file(self, file_id: str, raise_if_not_found: bool = True) -> Optional[File]:
+    def get_file(self, file_id: str, *, raise_if_not_found: bool = True) -> Optional[File]:
         """
         Get a file by its ID.
 
         :param file_id:
         :param raise_if_not_found: if ``True`` (default), raise an exception if the file doesn’t exist
         """
-        fm = self.get_file_metadata(file_id, raise_if_not_found)
+        fm = self.get_file_metadata(file_id, raise_if_not_found=raise_if_not_found)
         if fm:
             return File(fm, client=self)
         return None
@@ -205,6 +205,7 @@ class Client:
         return cast(List[File], self._execute_file_request(self._files.list(q="sharedWithMe=true")))
 
     def get_shared_file(self, name: str,
+                        *,
                         is_directory: Optional[bool] = None,
                         raise_if_not_found: bool = True) -> Optional[File]:
         """
